@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common'; // <-- Impor @Global
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { SupabaseService } from '../supabase/supabase.service';
@@ -7,10 +7,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from './jwt.strategy';
 
+@Global() // <-- [FIXED] Tambahkan dekorator ini
 @Module({
     imports: [
         ConfigModule,
-        PassportModule.register({ defaultStrategy: 'jwt' }), // Tambahkan ini
+        PassportModule.register({ defaultStrategy: 'jwt' }),
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
@@ -21,7 +22,7 @@ import { JwtStrategy } from './jwt.strategy';
         }),
     ],
     controllers: [AuthController],
-    providers: [AuthService, SupabaseService, JwtStrategy], // Tambahkan JwtStrategy di sini
+    providers: [AuthService, SupabaseService, JwtStrategy],
     exports: [AuthService, PassportModule],
 })
 export class AuthModule { }

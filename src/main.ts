@@ -8,11 +8,18 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  // [FIXED] Konfigurasi CORS yang lebih eksplisit untuk menangani Preflight Request
+  // [FIXED] Konfigurasi CORS diperbarui untuk mengizinkan header ngrok
   app.enableCors({
-    origin: '*', // Mengizinkan semua domain
+    origin: true, // Mengizinkan semua origin, baik untuk development
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    allowedHeaders: 'Content-Type, Accept, Authorization', // <-- PENTING: Izinkan header Authorization
+    credentials: true,
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      // Menambahkan header ngrok untuk melewati halaman peringatan browser
+      'ngrok-skip-browser-warning',
+    ],
   });
 
   app.useGlobalPipes(new ValidationPipe());
