@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { JwtService } from '@nestjs/jwt';
 
@@ -8,6 +8,24 @@ export class AuthService {
         private readonly supabaseService: SupabaseService,
         private readonly jwtService: JwtService,
     ) { }
+
+    // [DITAMBAHKAN] Fungsi baru untuk mengambil profil berdasarkan data dari token
+    async getProfile(user: any) {
+        const userId = user.id; // Ambil ID dari payload token (misalnya, { id: '...', role: '...' })
+
+        const { data: profile, error } = await this.supabaseService
+            .getAdminClient()
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+
+        if (error || !profile) {
+            throw new NotFoundException(`Profile for user ID ${userId} not found.`);
+        }
+
+        return profile;
+    }
 
     async loginWithEmail(email: string, password: string) {
         const supabase = this.supabaseService.getAdminClient();
@@ -58,7 +76,6 @@ export class AuthService {
             .single();
 
         if (profileError) {
-            // Jika gagal memasukkan profil, hapus user yang sudah terlanjur dibuat
             await supabase.auth.admin.deleteUser(signUpData.user.id);
             throw new BadRequestException(profileError.message);
         }
@@ -75,7 +92,6 @@ export class AuthService {
     }
 
     async logout(token: string) {
-        // Supabase client memerlukan token JWT untuk mengautentikasi permintaan signOut
         const supabase = this.supabaseService.getClient(token);
         const { error } = await supabase.auth.signOut();
 
