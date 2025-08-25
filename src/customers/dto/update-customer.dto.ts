@@ -1,5 +1,9 @@
-import { ApiProperty as ApiPropertyUpdate } from '@nestjs/swagger'; // Alias to avoid conflict
-import { IsString as IsStringUpdate, IsOptional as IsOptionalUpdate } from 'class-validator'; // Alias to avoid conflict
+
+// ================================================================
+// FILE: src/customers/dto/update-customer.dto.ts
+// ================================================================
+import { ApiProperty as ApiPropertyUpdate } from '@nestjs/swagger';
+import { IsString as IsStringUpdate, IsOptional as IsOptionalUpdate } from 'class-validator';
 
 export class UpdateCustomerDto {
     @ApiPropertyUpdate({ example: 'PT. Maju Jaya', required: false })

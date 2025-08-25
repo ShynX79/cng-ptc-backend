@@ -9,9 +9,9 @@ import { Roles } from '../auth/roles.decorator';
 
 @ApiTags('Customers')
 @Controller('customers')
-@UseGuards(JwtAuthGuard, RolesGuard) // Terapkan guard login dan peran
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('JWT-auth')
-@Roles('admin') // <-- HANYA ADMIN YANG BISA MENGAKSES SEMUA ENDPOINT DI CONTROLLER INI
+@Roles('admin') // <-- Mengunci semua endpoint hanya untuk admin
 export class CustomersController {
     constructor(private readonly customersService: CustomersService) { }
 
@@ -49,7 +49,7 @@ export class CustomersController {
         return this.customersService.remove(id);
     }
 
-    @Get('test/connection') // Mengubah path agar lebih jelas
+    @Get('test/connection')
     @ApiOperation({ summary: 'Test Supabase connection (Admin Only)' })
     async testSupabase() {
         return this.customersService.testConnection();

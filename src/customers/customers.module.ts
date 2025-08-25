@@ -1,13 +1,16 @@
+// ================================================================
+// FILE: src/customers/customers.module.ts
+// ================================================================
 import { Module } from '@nestjs/common';
 import { CustomersController } from './customers.controller';
 import { CustomersService } from './customers.service';
 import { SupabaseModule } from '../supabase/supabase.module';
-import { AuthModule } from '../auth/auth.module'; // <-- DITAMBAHKAN
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
     imports: [
         SupabaseModule,
-        AuthModule // <-- DITAMBAHKAN: Agar bisa menggunakan JwtAuthGuard
+        AuthModule
     ],
     controllers: [CustomersController],
     providers: [CustomersService],

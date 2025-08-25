@@ -6,21 +6,21 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Menambahkan prefix 'api' ke semua endpoint (e.g., /api/customers)
   app.setGlobalPrefix('api');
 
-  // Mengaktifkan CORS untuk mengizinkan permintaan dari domain lain
-  app.enableCors();
+  // [FIXED] Konfigurasi CORS yang lebih eksplisit untuk menangani Preflight Request
+  app.enableCors({
+    origin: '*', // Mengizinkan semua domain
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization', // <-- PENTING: Izinkan header Authorization
+  });
 
-  // Mengaktifkan validasi global untuk semua DTO
   app.useGlobalPipes(new ValidationPipe());
 
-  // Konfigurasi Swagger
   const config = new DocumentBuilder()
     .setTitle('CNG PTC API')
     .setDescription('Dokumentasi lengkap untuk backend aplikasi CNG PTC.')
     .setVersion('1.0')
-    // Menambahkan autentikasi Bearer Token ke Swagger UI
     .addBearerAuth(
       {
         type: 'http',
@@ -30,12 +30,11 @@ async function bootstrap() {
         description: 'Masukkan token JWT',
         in: 'header',
       },
-      'JWT-auth', // Nama skema keamanan ini harus unik
+      'JWT-auth',
     )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  // Mengubah path Swagger UI menjadi /api-docs
   SwaggerModule.setup('api-docs', app, document);
 
   const port = process.env.PORT || 3000;

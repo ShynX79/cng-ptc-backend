@@ -1,3 +1,6 @@
+// ================================================================
+// FILE: src/customers/customers.service.ts
+// ================================================================
 import {
     Injectable,
     NotFoundException,
@@ -55,12 +58,10 @@ export class CustomersService {
     }
 
     async remove(id: number) {
-        // Pengecekan data sebelum menghapus untuk pesan error yang lebih baik
         const { data: existing, error: findError } = await this.supabase.from('customers').select('id').eq('id', id).single();
         if (findError || !existing) {
             throw new NotFoundException(`Customer with ID "${id}" not found.`);
         }
-
         const { error } = await this.supabase.from('customers').delete().eq('id', id);
         this.handleSupabaseError(error, `remove: ${id}`);
     }
