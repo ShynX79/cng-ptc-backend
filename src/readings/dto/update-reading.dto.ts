@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsOptional } from 'class-validator';
 
-// DTO ini hanya berisi field yang boleh diubah oleh pengguna.
+// Hanya field yang boleh diubah user
 export class UpdateReadingDto {
     @ApiProperty({ example: 1450.5, required: false })
     @IsNumber()

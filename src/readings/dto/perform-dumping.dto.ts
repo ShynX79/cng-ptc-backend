@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString, IsNumber, IsDateString } from 'class-validator';
 
 export class PerformDumpingDto {
     @ApiProperty({
-        description: 'Nomor storage sementara yang digunakan untuk dumping/isi ulang',
+        description: 'Nomor storage yang di-refill (dumping)',
         example: '1013',
     })
     @IsString()
@@ -11,7 +11,7 @@ export class PerformDumpingDto {
     dumpingStorageNumber: string;
 
     @ApiProperty({
-        description: 'Pressure (PSI) dari storage sementara di awal proses',
+        description: 'PSI awal di storage dumping sebelum refill',
         example: 2900,
     })
     @IsNumber()
@@ -19,7 +19,7 @@ export class PerformDumpingDto {
     startPsi: number;
 
     @ApiProperty({
-        description: 'Pressure (PSI) dari storage sementara di akhir proses',
+        description: 'PSI akhir di storage dumping setelah refill',
         example: 2100,
     })
     @IsNumber()
@@ -27,7 +27,7 @@ export class PerformDumpingDto {
     endPsi: number;
 
     @ApiProperty({
-        description: 'Waktu selesai proses dumping',
+        description: 'Waktu selesai proses dumping (ISO string)',
         example: '2025-08-01T17:15:00.000Z',
     })
     @IsDateString()

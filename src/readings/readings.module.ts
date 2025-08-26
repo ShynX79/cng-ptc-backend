@@ -2,12 +2,12 @@ import { Module } from '@nestjs/common';
 import { ReadingsController } from './readings.controller';
 import { ReadingsService } from './readings.service';
 import { SupabaseModule } from '../supabase/supabase.module';
-import { AuthModule } from '../auth/auth.module'; // <-- DITAMBAHKAN
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
     imports: [
         SupabaseModule,
-        AuthModule // <-- DITAMBAHKAN
+        AuthModule
     ],
     controllers: [ReadingsController],
     providers: [ReadingsService],

@@ -3,7 +3,7 @@ import { ReadingsService } from './readings.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateReadingDto } from './dto/create-reading.dto';
 import { UpdateReadingDto } from './dto/update-reading.dto';
-import { PerformDumpingDto } from './dto/perform-dumping.dto'; // <-- Impor DTO baru
+import { PerformDumpingDto } from './dto/perform-dumping.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -22,7 +22,6 @@ export class ReadingsController {
         return this.readingsService.create(createReadingDto, operatorId);
     }
 
-    // [ENDPOINT BARU] Untuk mencatat proses dumping
     @Post(':id/dumping')
     @ApiOperation({ summary: 'Perform a dumping (refill) process from a reading (Admin & Operator)' })
     performDumping(
@@ -32,6 +31,13 @@ export class ReadingsController {
     ) {
         const user = req.user;
         return this.readingsService.performDumping(sourceReadingId, dumpingDto, user);
+    }
+
+    @Get('summary/dumping')
+    @Roles('admin')
+    @ApiOperation({ summary: 'Get a summary of all dumping events (Admin Only)' })
+    getDumpingSummary() {
+        return this.readingsService.getDumpingSummary();
     }
 
     @Get('stats/operator-counts')
@@ -51,7 +57,7 @@ export class ReadingsController {
 
     @Get()
     @Roles('admin')
-    @ApiOperation({ summary: 'Get all readings with details (Admin Only)' })
+    @ApiOperation({ summary: 'Get all readings with details & CHANGE summary (Admin Only)' })
     findAll() {
         return this.readingsService.findAll();
     }

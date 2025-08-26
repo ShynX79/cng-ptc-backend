@@ -12,7 +12,7 @@ export class CreateReadingDto {
     @ApiProperty({ required: false }) @IsString() @IsOptional() remarks?: string;
     @ApiProperty({ required: false }) @IsNumber() @IsOptional() fixed_storage_quantity?: number;
 
-    // [DITAMBAHKAN] Field baru untuk input waktu manual
+    // input waktu manual (opsional) → dibulatkan ke jam terdekat (UTC)
     @ApiProperty({
         example: '2025-08-21T13:40:00.000Z',
         required: false,
