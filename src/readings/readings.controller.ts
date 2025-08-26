@@ -1,11 +1,9 @@
-// ================================================================
-// FILE: src/readings/readings.controller.ts
-// ================================================================
 import { Controller, Get, Post, Body, UseGuards, Request, Param, ParseIntPipe, Put, Delete, HttpCode } from '@nestjs/common';
 import { ReadingsService } from './readings.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateReadingDto } from './dto/create-reading.dto';
 import { UpdateReadingDto } from './dto/update-reading.dto';
+import { PerformDumpingDto } from './dto/perform-dumping.dto'; // <-- Impor DTO baru
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -22,6 +20,18 @@ export class ReadingsController {
     create(@Body() createReadingDto: CreateReadingDto, @Request() req) {
         const operatorId = req.user.id;
         return this.readingsService.create(createReadingDto, operatorId);
+    }
+
+    // [ENDPOINT BARU] Untuk mencatat proses dumping
+    @Post(':id/dumping')
+    @ApiOperation({ summary: 'Perform a dumping (refill) process from a reading (Admin & Operator)' })
+    performDumping(
+        @Param('id', ParseIntPipe) sourceReadingId: number,
+        @Body() dumpingDto: PerformDumpingDto,
+        @Request() req,
+    ) {
+        const user = req.user;
+        return this.readingsService.performDumping(sourceReadingId, dumpingDto, user);
     }
 
     @Get('stats/operator-counts')
@@ -68,4 +78,3 @@ export class ReadingsController {
         return this.readingsService.remove(id, user);
     }
 }
-
