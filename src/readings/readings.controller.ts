@@ -1,12 +1,12 @@
-import { Controller, Get, Post, Body, UseGuards, Request, Param, ParseIntPipe, Put, Delete, HttpCode, Query } from '@nestjs/common'; // [TAMBAHAN] Import Query
+import { Controller, Get, Post, Body, UseGuards, Request, Param, ParseIntPipe, Put, Delete, HttpCode, Query } from '@nestjs/common';
 import { ReadingsService } from './readings.service';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger'; // [TAMBAHAN] Import ApiQuery
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CreateReadingDto } from './dto/create-reading.dto';
 import { UpdateReadingDto } from './dto/update-reading.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
-import { QueryReadingDto } from './dto/query-reading.dto'; // [TAMBAHAN] Import DTO baru
+import { QueryReadingDto } from './dto/query-reading.dto';
 
 @ApiTags('Readings')
 @Controller('readings')
@@ -24,14 +24,12 @@ export class ReadingsController {
     create(@Body() createReadingDto: CreateReadingDto, @Request() req) {
         const operatorId = req.user.id;
         const token = this.getTokenFromRequest(req);
-        // [PERUBAHAN] DTO untuk 'manual_created_at' diubah namanya agar lebih jelas
-        // Kita asumsikan DTO memiliki properti 'manual_created_at' dari frontend
-        return this.readingsService.create({ ...createReadingDto, manual_created_at: createReadingDto.manual_created_at || new Date().toTimeString().slice(0,5) }, operatorId, token);
+        return this.readingsService.create({ ...createReadingDto, manual_created_at: createReadingDto.manual_created_at || new Date().toTimeString().slice(0, 5) }, operatorId, token);
     }
 
     @Get('stats/operator-counts')
-    @Roles('admin')
-    @ApiOperation({ summary: 'Get reading counts per operator (Admin Only)' })
+    @Roles('admin', 'operator') // [DIUBAH]
+    @ApiOperation({ summary: 'Get reading counts per operator (Admin & Operator)' })
     getOperatorCounts() {
         return this.readingsService.getOperatorCounts();
     }
@@ -45,10 +43,9 @@ export class ReadingsController {
         return this.readingsService.findReadingsByOperator(operatorId, token);
     }
 
-    // [PERUBAHAN] Endpoint ini sekarang menerima query parameter untuk filtering
     @Get()
-    @Roles('admin')
-    @ApiOperation({ summary: 'Get all readings with filters (Admin Only)' })
+    @Roles('admin', 'operator') // [DIUBAH]
+    @ApiOperation({ summary: 'Get all readings with filters (Admin & Operator)' })
     @ApiQuery({ name: 'customer', required: false, type: String, description: 'Filter by customer code' })
     @ApiQuery({ name: 'operator', required: false, type: String, description: 'Filter by operator username' })
     @ApiQuery({ name: 'searchTerm', required: false, type: String, description: 'Search term' })
@@ -59,8 +56,8 @@ export class ReadingsController {
     }
 
     @Get(':id')
-    @Roles('admin')
-    @ApiOperation({ summary: 'Get a single reading by ID (Admin Only)' })
+    @Roles('admin', 'operator') // [DIUBAH]
+    @ApiOperation({ summary: 'Get a single reading by ID (Admin & Operator)' })
     findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.findOne(id, token);
