@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, ParseIntPipe, UseGuards, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  Put,
+  ParseIntPipe,
+  UseGuards,
+  HttpCode,
+  Request,
+} from '@nestjs/common'; // <-- Tambahkan 'Request'
 import { CustomersService } from './customers.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -11,47 +23,58 @@ import { Roles } from '../auth/roles.decorator';
 @Controller('customers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('JWT-auth')
-@Roles('admin') // <-- Mengunci semua endpoint hanya untuk admin
+@Roles('admin')
 export class CustomersController {
-    constructor(private readonly customersService: CustomersService) { }
+  constructor(private readonly customersService: CustomersService) {}
 
-    @Post()
-    @ApiOperation({ summary: 'Create a new customer (Admin Only)' })
-    create(@Body() createCustomerDto: CreateCustomerDto) {
-        return this.customersService.create(createCustomerDto);
-    }
+  private getTokenFromRequest(req): string {
+    return req.headers.authorization.split(' ')[1];
+  }
 
-    @Get()
-    @ApiOperation({ summary: 'Get all customers (Admin Only)' })
-    findAll() {
-        return this.customersService.findAll();
-    }
+  @Post()
+  @ApiOperation({ summary: 'Create a new customer (Admin Only)' })
+  create(@Body() createCustomerDto: CreateCustomerDto, @Request() req) {
+    const token = this.getTokenFromRequest(req);
+    return this.customersService.create(createCustomerDto, token);
+  }
 
-    @Get(':id')
-    @ApiOperation({ summary: 'Get a customer by ID (Admin Only)' })
-    findOneById(@Param('id', ParseIntPipe) id: number) {
-        return this.customersService.findOneById(id);
-    }
+  @Get()
+  @ApiOperation({ summary: 'Get all customers (Admin Only)' })
+  findAll(@Request() req) {
+    const token = this.getTokenFromRequest(req);
+    return this.customersService.findAll(token);
+  }
 
-    @Put(':id')
-    @ApiOperation({ summary: 'Update a customer by ID (Admin Only)' })
-    update(
-        @Param('id', ParseIntPipe) id: number,
-        @Body() updateCustomerDto: UpdateCustomerDto,
-    ) {
-        return this.customersService.update(id, updateCustomerDto);
-    }
+  @Get(':id')
+  @ApiOperation({ summary: 'Get a customer by ID (Admin Only)' })
+  findOneById(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    const token = this.getTokenFromRequest(req);
+    return this.customersService.findOneById(id, token);
+  }
 
-    @Delete(':id')
-    @HttpCode(204)
-    @ApiOperation({ summary: 'Delete a customer by ID (Admin Only)' })
-    remove(@Param('id', ParseIntPipe) id: number) {
-        return this.customersService.remove(id);
-    }
+  @Put(':id')
+  @ApiOperation({ summary: 'Update a customer by ID (Admin Only)' })
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateCustomerDto: UpdateCustomerDto,
+    @Request() req,
+  ) {
+    const token = this.getTokenFromRequest(req);
+    return this.customersService.update(id, updateCustomerDto, token);
+  }
 
-    @Get('test/connection')
-    @ApiOperation({ summary: 'Test Supabase connection (Admin Only)' })
-    async testSupabase() {
-        return this.customersService.testConnection();
-    }
+  @Delete(':id')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Delete a customer by ID (Admin Only)' })
+  remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    const token = this.getTokenFromRequest(req);
+    return this.customersService.remove(id, token);
+  }
+
+  @Get('test/connection')
+  @ApiOperation({ summary: 'Test Supabase connection (Admin Only)' })
+  async testSupabase(@Request() req) {
+    const token = this.getTokenFromRequest(req);
+    return this.customersService.testConnection(token);
+  }
 }

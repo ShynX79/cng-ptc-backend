@@ -1,11 +1,8 @@
-// ================================================================
-// FILE: src/customers/customers.service.ts
-// ================================================================
 import {
-    Injectable,
-    NotFoundException,
-    InternalServerErrorException,
-    Logger,
+  Injectable,
+  NotFoundException,
+  InternalServerErrorException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -14,66 +11,96 @@ import { PostgrestError } from '@supabase/supabase-js';
 
 @Injectable()
 export class CustomersService {
-    private readonly logger = new Logger(CustomersService.name);
+  constructor(private readonly supabaseService: SupabaseService) {}
 
-    constructor(private readonly supabaseService: SupabaseService) { }
+  private handleSupabaseError(
+    error: PostgrestError | null,
+    context: string,
+  ): void {
+    if (!error) return;
+    console.error(`Supabase error in ${context}:`, error.message);
 
-    private get supabase() {
-        return this.supabaseService.getAdminClient();
+    if (error.code === '42501') {
+      throw new ForbiddenException(
+        'You do not have permission to perform this action.',
+      );
     }
-
-    private handleSupabaseError(error: PostgrestError | null, context: string): void {
-        if (!error) return;
-        this.logger.error(`Supabase error in ${context}: ${error.message}`, error.details);
-        if (error.code === 'PGRST116') {
-            throw new NotFoundException(`Customer not found.`);
-        }
-        throw new InternalServerErrorException('An unexpected database error occurred.');
+    if (error.code === 'PGRST116') {
+      throw new NotFoundException(`The requested resource was not found.`);
     }
-
-    async create(customerData: CreateCustomerDto) {
-        const { data, error } = await this.supabase.from('customers').insert(customerData).select().single();
-        this.handleSupabaseError(error, 'create');
-        return data;
+    if (error.code === '23505') {
+      throw new InternalServerErrorException(
+        `Customer with this code already exists.`,
+      );
     }
+    throw new InternalServerErrorException(
+      `An unexpected database error occurred: ${error.message}`,
+    );
+  }
 
-    async findAll() {
-        const { data, error } = await this.supabase.from('customers').select('*');
-        this.handleSupabaseError(error, 'findAll');
-        return data;
-    }
+  async create(customerData: CreateCustomerDto, token: string) {
+    const supabase = this.supabaseService.getClient(token);
+    const { data, error } = await supabase
+      .from('customers')
+      .insert(customerData)
+      .select()
+      .single();
+    this.handleSupabaseError(error, 'create customer');
+    return data;
+  }
 
-    async findOneById(id: number) {
-        const { data, error } = await this.supabase.from('customers').select('*').eq('id', id).single();
-        this.handleSupabaseError(error, `findOneById: ${id}`);
-        if (!data) throw new NotFoundException(`Customer with id "${id}" not found.`);
-        return data;
-    }
+  async findAll(token: string) {
+    const supabase = this.supabaseService.getClient(token);
+    const { data, error } = await supabase.from('customers').select('*');
+    this.handleSupabaseError(error, 'findAll customers');
+    return data;
+  }
 
-    async update(id: number, updateData: UpdateCustomerDto) {
-        const { data, error } = await this.supabase.from('customers').update(updateData).eq('id', id).select().single();
-        this.handleSupabaseError(error, `update: ${id}`);
-        if (!data) throw new NotFoundException(`Customer with id "${id}" not found.`);
-        return data;
-    }
+  async findOneById(id: number, token: string) {
+    const supabase = this.supabaseService.getClient(token);
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('id', id)
+      .single();
+    this.handleSupabaseError(error, `findOneById customer: ${id}`);
+    return data;
+  }
 
-    async remove(id: number) {
-        const { data: existing, error: findError } = await this.supabase.from('customers').select('id').eq('id', id).single();
-        if (findError || !existing) {
-            throw new NotFoundException(`Customer with ID "${id}" not found.`);
-        }
-        const { error } = await this.supabase.from('customers').delete().eq('id', id);
-        this.handleSupabaseError(error, `remove: ${id}`);
-    }
+  async update(id: number, updateData: UpdateCustomerDto, token: string) {
+    const supabase = this.supabaseService.getClient(token);
+    const { data, error } = await supabase
+      .from('customers')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+    this.handleSupabaseError(error, `update customer: ${id}`);
+    return data;
+  }
 
-    async testConnection() {
-        try {
-            const { data, error } = await this.supabase.from('customers').select('id').limit(1);
-            this.handleSupabaseError(error, 'testConnection');
-            return { status: 'ok', message: 'Supabase connection successful', sample: data?.[0] || null };
-        } catch (err) {
-            this.logger.error('Failed to test Supabase connection', err as any);
-            throw new InternalServerErrorException('Supabase connection failed');
-        }
+  async remove(id: number, token: string) {
+    const supabase = this.supabaseService.getClient(token);
+    const { error } = await supabase.from('customers').delete().eq('id', id);
+    this.handleSupabaseError(error, `remove customer: ${id}`);
+  }
+
+  async testConnection(token: string) {
+    const supabase = this.supabaseService.getClient(token);
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('id')
+        .limit(1);
+      this.handleSupabaseError(error, 'testConnection');
+      return {
+        status: 'ok',
+        message: 'Supabase connection successful',
+        sample: data?.[0] || null,
+      };
+    } catch (err) {
+      console.error('Failed to test Supabase connection', err as any);
+      throw new InternalServerErrorException('Supabase connection failed');
     }
+  }
 }
