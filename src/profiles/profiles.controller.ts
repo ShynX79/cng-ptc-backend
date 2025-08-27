@@ -1,10 +1,18 @@
-import { Controller, Get, Param, ParseUUIDPipe, UseGuards, Request } from '@nestjs/common';
+import {
+    Controller, Get, Post, Body, Param, ParseUUIDPipe, UseGuards, Request, Put, Delete, HttpCode
+} from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard'; // Import RolesGuard
+import { Roles } from '../auth/roles.decorator'; // Import Roles decorator
+import { CreateProfileDto } from './dto/create-profile.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @ApiTags('Profiles')
 @Controller('profiles')
+@UseGuards(JwtAuthGuard, RolesGuard) // Terapkan RolesGuard di level controller
+@ApiBearerAuth('JWT-auth')
 export class ProfilesController {
     constructor(private readonly profilesService: ProfilesService) { }
 
@@ -12,12 +20,42 @@ export class ProfilesController {
         return req.headers.authorization.split(' ')[1];
     }
 
+    @Post()
+    @Roles('admin') // HANYA ADMIN
+    @ApiOperation({ summary: 'Create a new operator profile (Admin Only)' })
+    create(@Body() createProfileDto: CreateProfileDto) {
+        return this.profilesService.create(createProfileDto);
+    }
+
+    @Get()
+    @Roles('admin') // HANYA ADMIN
+    @ApiOperation({ summary: 'Get all user profiles (Admin Only)' })
+    findAll(@Request() req) {
+        const token = this.getTokenFromRequest(req);
+        return this.profilesService.findAll(token);
+    }
+
     @Get(':id')
-    @UseGuards(JwtAuthGuard)
-    @ApiBearerAuth('JWT-auth')
-    @ApiOperation({ summary: 'Get a user profile by ID (Login Required)' })
+    @Roles('admin') // HANYA ADMIN
+    @ApiOperation({ summary: 'Get a user profile by ID (Admin Only)' })
     findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
         const token = this.getTokenFromRequest(req);
         return this.profilesService.findOne(id, token);
+    }
+
+    @Put(':id')
+    @Roles('admin') // HANYA ADMIN
+    @ApiOperation({ summary: 'Update a user profile (Admin Only)' })
+    update(@Param('id', ParseUUIDPipe) id: string, @Body() updateProfileDto: UpdateProfileDto, @Request() req) {
+        const token = this.getTokenFromRequest(req);
+        return this.profilesService.update(id, updateProfileDto, token);
+    }
+
+    @Delete(':id')
+    @HttpCode(204)
+    @Roles('admin') // HANYA ADMIN
+    @ApiOperation({ summary: 'Delete a user profile (Admin Only)' })
+    remove(@Param('id', ParseUUIDPipe) id: string) {
+        return this.profilesService.remove(id);
     }
 }
