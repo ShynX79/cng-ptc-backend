@@ -1,56 +1,65 @@
-import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { 
+    Injectable, 
+    NotFoundException, 
+    InternalServerErrorException,
+    ForbiddenException
+} from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { CreateStorageDto } from './dto/create-storage.dto';
 import { UpdateStorageDto } from './dto/update-storage.dto';
+import { PostgrestError } from '@supabase/supabase-js';
 
 @Injectable()
 export class StoragesService {
-    constructor(private readonly supabaseService: SupabaseService) { }
+    constructor(private readonly supabaseService: SupabaseService) {}
+    
+    private handleSupabaseError(error: PostgrestError | null, context: string): void {
+        if (!error) return;
+        console.error(`Supabase error in ${context}:`, error.message);
 
-    private get supabase() {
-        return this.supabaseService.getAdminClient();
-    }
-
-    async create(storageData: CreateStorageDto) {
-        const { data, error } = await this.supabase.from('storages').insert(storageData).select().single();
-        if (error) throw new InternalServerErrorException(error.message);
-        return data;
-    }
-
-    async findAll() {
-        const { data, error } = await this.supabase.from('storages').select('*');
-        if (error) throw new InternalServerErrorException(error.message);
-        return data;
-    }
-
-    async findOneById(id: number) {
-        const { data, error } = await this.supabase.from('storages').select('*').eq('id', id).single();
-        if (error) {
-            if (error.code === 'PGRST116') throw new NotFoundException(`Storage with ID "${id}" not found.`);
-            throw new InternalServerErrorException(error.message);
+        if (error.code === '42501') {
+            throw new ForbiddenException('You do not have permission to perform this action.');
         }
-        if (!data) throw new NotFoundException(`Storage with ID "${id}" not found.`);
+        if (error.code === 'PGRST116') {
+            throw new NotFoundException(`The requested resource was not found.`);
+        }
+        if (error.code === '23505') {
+            throw new InternalServerErrorException(`Storage with this number already exists.`);
+        }
+        throw new InternalServerErrorException(`An unexpected database error occurred: ${error.message}`);
+    }
+
+    async create(storageData: CreateStorageDto, token: string) {
+        const supabase = this.supabaseService.getClient(token);
+        const { data, error } = await supabase.from('storages').insert(storageData).select().single();
+        this.handleSupabaseError(error, 'create storage');
         return data;
     }
 
-    async update(id: number, updateDto: UpdateStorageDto) {
-        const { data, error } = await this.supabase.from('storages').update(updateDto).eq('id', id).select().single();
-        if (error) {
-            if (error.code === 'PGRST116') throw new NotFoundException(`Storage with ID "${id}" not found.`);
-            throw new InternalServerErrorException(error.message);
-        }
-        if (!data) throw new NotFoundException(`Storage with ID "${id}" not found.`);
+    async findAll(token: string) {
+        const supabase = this.supabaseService.getClient(token);
+        const { data, error } = await supabase.from('storages').select('*');
+        this.handleSupabaseError(error, 'findAll storages');
         return data;
     }
 
-    async remove(id: number) {
-        // Pertama, pastikan data ada sebelum dihapus
-        const { data: existing, error: findError } = await this.supabase.from('storages').select('id').eq('id', id).single();
-        if (findError || !existing) {
-            throw new NotFoundException(`Storage with ID "${id}" not found.`);
-        }
+    async findOneById(id: number, token: string) {
+        const supabase = this.supabaseService.getClient(token);
+        const { data, error } = await supabase.from('storages').select('*').eq('id', id).single();
+        this.handleSupabaseError(error, `findOneById storage: ${id}`);
+        return data;
+    }
 
-        const { error } = await this.supabase.from('storages').delete().eq('id', id);
-        if (error) throw new InternalServerErrorException(error.message);
+    async update(id: number, updateDto: UpdateStorageDto, token: string) {
+        const supabase = this.supabaseService.getClient(token);
+        const { data, error } = await supabase.from('storages').update(updateDto).eq('id', id).select().single();
+        this.handleSupabaseError(error, `update storage: ${id}`);
+        return data;
+    }
+
+    async remove(id: number, token: string) {
+        const supabase = this.supabaseService.getClient(token);
+        const { error } = await supabase.from('storages').delete().eq('id', id);
+        this.handleSupabaseError(error, `remove storage: ${id}`);
     }
 }

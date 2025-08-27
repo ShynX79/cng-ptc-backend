@@ -1,14 +1,11 @@
+// backend-api-nest/src/storages/storages.module.ts
 import { Module } from '@nestjs/common';
 import { StoragesController } from './storages.controller';
 import { StoragesService } from './storages.service';
 import { SupabaseModule } from '../supabase/supabase.module';
-import { AuthModule } from '../auth/auth.module'; // <-- DITAMBAHKAN
 
 @Module({
-    imports: [
-        SupabaseModule,
-        AuthModule // <-- DITAMBAHKAN
-    ],
+    imports: [ SupabaseModule ],
     controllers: [StoragesController],
     providers: [StoragesService],
 })
