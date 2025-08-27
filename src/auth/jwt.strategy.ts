@@ -1,16 +1,22 @@
-import { Injectable, Logger } from '@nestjs/common';
+// backend-api-nest/src/auth/jwt.strategy.ts
+import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { SupabaseService } from '../supabase/supabase.service'; // <-- Tambahkan impor ini
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly logger = new Logger(JwtStrategy.name);
 
-    constructor(configService: ConfigService) {
-        const secret = configService.get<string>('JWT_SECRET');
+    constructor(
+        configService: ConfigService,
+        // [FIX] Inject SupabaseService agar bisa query ke database
+        private readonly supabaseService: SupabaseService, 
+    ) {
+        const secret = configService.get<string>('SUPABASE_JWT_SECRET');
         if (!secret) {
-            throw new Error('JWT_SECRET tidak terdefinisi di environment variables');
+            throw new Error('SUPABASE_JWT_SECRET is not defined');
         }
 
         super({
@@ -22,9 +28,26 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     async validate(payload: any) {
         this.logger.log(`Validating user from JWT payload: ${JSON.stringify(payload)}`);
+        
+        if (!payload.sub) {
+            throw new UnauthorizedException('Invalid token payload');
+        }
 
-        // [FIXED] Menggunakan payload.sub untuk ID, sesuai dengan standar JWT dan payload yang dibuat di AuthService.
-        // Juga menyertakan email untuk kelengkapan data pengguna.
-        return { id: payload.sub, email: payload.email, role: payload.role };
+        const userId = payload.sub;
+        // [FIX] Gunakan admin client untuk mengambil profil pengguna.
+        // Ini adalah operasi sistem internal untuk verifikasi.
+        const supabase = this.supabaseService.getAdminClient();
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        if (!profile) {
+            throw new UnauthorizedException('User profile not found.');
+        }
+
+        // Kembalikan objek user yang lengkap dengan role dari tabel profiles
+        return { id: payload.sub, email: payload.email, role: profile.role };
     }
 }
