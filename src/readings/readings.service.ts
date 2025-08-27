@@ -8,7 +8,7 @@ import { SupabaseService } from '../supabase/supabase.service';
 import { CreateReadingDto } from './dto/create-reading.dto';
 import { UpdateReadingDto } from './dto/update-reading.dto';
 import { PostgrestError } from '@supabase/supabase-js';
-import { QueryReadingDto } from './dto/query-reading.dto'; // [TAMBAHAN] Import DTO baru
+import { QueryReadingDto } from './dto/query-reading.dto';
 
 @Injectable()
 export class ReadingsService {
@@ -28,11 +28,9 @@ export class ReadingsService {
         throw new InternalServerErrorException(`An unexpected database error occurred: ${error.message}`);
     }
 
-    // [PERUBAHAN] Menggunakan RPC add_reading_with_backfill
     async create(readingData: CreateReadingDto, operatorId: string, token: string) {
         const supabase = this.supabaseService.getClient(token);
-        
-        // Aturan pembulatan waktu dari frontend (cng-next/components/data-entry-form.tsx)
+
         const localDate = new Date();
         const [hourStr, minuteStr] = readingData.manual_created_at.split(":");
         let hour = parseInt(hourStr, 10);
@@ -62,7 +60,6 @@ export class ReadingsService {
         });
 
         this.handleSupabaseError(error, 'create reading with backfill');
-        // RPC ini tidak mengembalikan data, jadi kita kembalikan pesan sukses
         return { message: 'Reading created successfully.' };
     }
 
@@ -74,7 +71,7 @@ export class ReadingsService {
             .eq('id', id)
             .select()
             .single();
-        
+
         this.handleSupabaseError(error, `update reading id: ${id}`);
         return data;
     }
@@ -84,11 +81,10 @@ export class ReadingsService {
         const { error } = await supabase.from('readings').delete().eq('id', id);
         this.handleSupabaseError(error, `remove reading id: ${id}`);
     }
-    
-    // [PERUBAHAN] Menggunakan RPC get_readings_with_flowmeter untuk filter dan kalkulasi
+
     async findAll(token: string, filters: QueryReadingDto) {
         const supabase = this.supabaseService.getClient(token);
-        
+
         const { data, error } = await supabase.rpc('get_readings_with_flowmeter', {
             customer_filter: filters.customer || 'all',
             operator_filter: filters.operator || 'all',
@@ -120,11 +116,11 @@ export class ReadingsService {
             .eq('operator_id', operatorId)
             .order('recorded_at', { ascending: false })
             .limit(10);
-            
+
         this.handleSupabaseError(error, `findReadingsByOperator for operator: ${operatorId}`);
         return data;
     }
-    
+
     async getOperatorCounts() {
         const supabase = this.supabaseService.getAdminClient();
         const { data, error } = await supabase.rpc('get_operator_reading_counts');
