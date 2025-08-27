@@ -1,14 +1,11 @@
+// backend-api-nest/src/readings/readings.module.ts
 import { Module } from '@nestjs/common';
 import { ReadingsController } from './readings.controller';
 import { ReadingsService } from './readings.service';
 import { SupabaseModule } from '../supabase/supabase.module';
-import { AuthModule } from '../auth/auth.module';
 
 @Module({
-    imports: [
-        SupabaseModule,
-        AuthModule
-    ],
+    imports: [ SupabaseModule ],
     controllers: [ReadingsController],
     providers: [ReadingsService],
 })
