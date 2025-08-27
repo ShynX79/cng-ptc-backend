@@ -1,3 +1,4 @@
+// backend-api-nest/src/main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -8,16 +9,15 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  // [FIXED] Konfigurasi CORS diperbarui untuk mengizinkan header ngrok
   app.enableCors({
-    origin: true, // Mengizinkan semua origin, baik untuk development
+    origin: true,
+
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: [
       'Content-Type',
       'Authorization',
       'Accept',
-      // Menambahkan header ngrok untuk melewati halaman peringatan browser
       'ngrok-skip-browser-warning',
     ],
   });
@@ -48,6 +48,8 @@ async function bootstrap() {
   await app.listen(port);
 
   console.log(`Aplikasi berjalan di: ${await app.getUrl()}`);
-  console.log(`Dokumentasi Swagger tersedia di: ${await app.getUrl()}/api-docs`);
+  console.log(
+    `Dokumentasi Swagger tersedia di: ${await app.getUrl()}/api-docs`,
+  );
 }
 bootstrap();
