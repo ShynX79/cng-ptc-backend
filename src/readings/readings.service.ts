@@ -19,7 +19,9 @@ export class ReadingsService {
 
     private handleSupabaseError(error: PostgrestError | null, context: string): void {
         if (!error) return;
+
         console.error(`Supabase error in ${context}:`, error.message);
+
         if (error.code === '42501') {
             throw new ForbiddenException('You do not have permission to perform this action.');
         }
@@ -31,6 +33,7 @@ export class ReadingsService {
 
     async create(readingData: CreateReadingDto, operatorId: string, token: string) {
         const supabase = this.supabaseService.getClient(token);
+
         const localDate = new Date();
         const [hourStr, minuteStr] = readingData.manual_created_at.split(":");
         let hour = parseInt(hourStr, 10);
@@ -45,6 +48,7 @@ export class ReadingsService {
             hour, 0, 0
         );
         const finalTimestamp = recordedDate.toISOString();
+
         const { error } = await supabase.rpc('add_reading_with_backfill', {
             p_recorded_at: finalTimestamp,
             p_customer_code: readingData.customer_code,
@@ -57,16 +61,13 @@ export class ReadingsService {
             p_flow_turbine: readingData.flow_turbine,
             p_remarks: readingData.remarks
         });
+
         this.handleSupabaseError(error, 'create reading with backfill');
         return { message: 'Reading created successfully.' };
     }
 
     async createChange(changeData: CreateChangeDto, operatorId: string, token: string) {
         const supabase = this.supabaseService.getClient(token);
-
-        if (changeData.old_storage_number === changeData.new_storage_number) {
-            throw new BadRequestException('Nomor storage baru tidak boleh sama dengan nomor storage lama.');
-        }
 
         const { data: lastReading, error: lastReadingError } = await supabase
             .from('readings')
@@ -99,6 +100,7 @@ export class ReadingsService {
 
     async createDumping(dumpingData: CreateDumpingDto, operatorId: string, token: string) {
         const supabase = this.supabaseService.getClient(token);
+
         const { error } = await supabase.rpc('perform_dumping', {
             p_operator_id: operatorId,
             p_customer_code: dumpingData.customer_code,
@@ -117,6 +119,7 @@ export class ReadingsService {
             p_time_before: dumpingData.time_before,
             p_time_after: dumpingData.time_after
         });
+
         this.handleSupabaseError(error, 'perform dumping');
         return { message: 'Dumping process recorded successfully.' };
     }
@@ -129,6 +132,7 @@ export class ReadingsService {
             .eq('id', id)
             .select()
             .single();
+
         this.handleSupabaseError(error, `update reading id: ${id}`);
         return data;
     }
@@ -146,7 +150,7 @@ export class ReadingsService {
             customer_filter: filters.customer || 'all',
             operator_filter: filters.operator || 'all',
             search_term: filters.searchTerm || '',
-            sort_order: 'asc', // Paksa urutan ASC untuk pemrosesan
+            sort_order: 'asc',
         });
 
         this.handleSupabaseError(error, 'findAll readings with flowmeter');
@@ -158,24 +162,13 @@ export class ReadingsService {
         const processedData: any[] = [];
         let i = 0;
 
-        const remarkOrder = {
-            'Dumping: Destination Before': 1,
-            'Dumping: Source Before': 2,
-            'Dumping: Source After': 3,
-            'Dumping: Destination After': 4,
-            'Change: Old Storage Out': 1,
-            'Change: New Storage In': 2,
-        };
-
         const sortedReadings = [...rawReadings].sort((a, b) => {
             const timeA = new Date(a.recorded_at).getTime();
             const timeB = new Date(b.recorded_at).getTime();
             if (timeA !== timeB) return timeA - timeB;
-
-            const orderA = remarkOrder[a.remarks] || 99;
-            const orderB = remarkOrder[b.remarks] || 99;
-            if (orderA !== orderB) return orderA - orderB;
-
+            const remarksA = a.remarks || '';
+            const remarksB = b.remarks || '';
+            if (remarksA !== remarksB) return remarksA.localeCompare(remarksB);
             return a.id - b.id;
         });
 
@@ -185,13 +178,20 @@ export class ReadingsService {
             const next2 = sortedReadings[i + 2];
             const next3 = sortedReadings[i + 3];
 
-            if (current.remarks === 'Change: Old Storage Out' && next?.remarks === 'Change: New Storage In' && current.recorded_at === next.recorded_at) {
-                current.isChangeTrue = true;
-                next.isChangeTrue = true;
+            const isChangePair = next && current.recorded_at === next.recorded_at &&
+                ((current.remarks === 'Change: Old Storage Out' && next.remarks === 'Change: New Storage In') ||
+                    (current.remarks === 'Change: New Storage In' && next.remarks === 'Change: Old Storage Out'));
 
-                processedData.push(current);
-                processedData.push({ type: 'CHANGE_SUMMARY', id: `summary_change_${current.id}` });
-                processedData.push(next);
+            if (isChangePair) {
+                const oldStorage = current.remarks === 'Change: Old Storage Out' ? current : next;
+                const newStorage = current.remarks === 'Change: New Storage In' ? current : next;
+
+                oldStorage.isChangeTrue = true;
+                newStorage.isChangeTrue = true;
+
+                processedData.push(oldStorage);
+                processedData.push({ type: 'CHANGE_SUMMARY', id: `summary_change_${current.id}`, duration: 'CHANGE' });
+                processedData.push(newStorage);
                 i += 2;
                 continue;
             }
@@ -208,7 +208,7 @@ export class ReadingsService {
                 next3.isDumpingTrue = true;
 
                 processedData.push(current, next);
-                processedData.push({ type: 'DUMPING_SUMMARY', id: `summary_dumping_${current.id}` });
+                processedData.push({ type: 'DUMPING_SUMMARY', id: `summary_dumping_${current.id}`, duration: 'DUMPING' });
                 processedData.push(next2, next3);
                 i += 4;
                 continue;
@@ -234,6 +234,7 @@ export class ReadingsService {
             .select(`*, customers (name), profiles (username)`)
             .eq('id', id)
             .single();
+
         this.handleSupabaseError(error, `findOne reading id: ${id}`);
         return data;
     }
@@ -246,6 +247,7 @@ export class ReadingsService {
             .eq('operator_id', operatorId)
             .order('recorded_at', { ascending: false })
             .limit(10);
+
         this.handleSupabaseError(error, `findReadingsByOperator for operator: ${operatorId}`);
         return data;
     }
