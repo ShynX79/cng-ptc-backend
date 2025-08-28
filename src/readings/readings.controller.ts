@@ -7,6 +7,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { QueryReadingDto } from './dto/query-reading.dto';
+import { CreateDumpingDto } from './dto/create-dumping.dto';
 
 @ApiTags('Readings')
 @Controller('readings')
@@ -76,5 +77,14 @@ export class ReadingsController {
     remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.remove(id, token);
+    }
+
+    @Post('dumping')
+    @Roles('admin', 'operator')
+    @ApiOperation({ summary: 'Create new readings from a dumping process (Admin & Operator)' })
+    createDumping(@Body() createDumpingDto: CreateDumpingDto, @Request() req) {
+        const operatorId = req.user.id;
+        const token = this.getTokenFromRequest(req);
+        return this.readingsService.createDumping(createDumpingDto, operatorId, token);
     }
 }

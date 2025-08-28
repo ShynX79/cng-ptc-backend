@@ -9,6 +9,7 @@ import { CreateReadingDto } from './dto/create-reading.dto';
 import { UpdateReadingDto } from './dto/update-reading.dto';
 import { PostgrestError } from '@supabase/supabase-js';
 import { QueryReadingDto } from './dto/query-reading.dto';
+import { CreateDumpingDto } from './dto/create-dumping.dto';
 
 @Injectable()
 export class ReadingsService {
@@ -129,5 +130,31 @@ export class ReadingsService {
             throw new InternalServerErrorException(error.message);
         }
         return data;
+    }
+
+    async createDumping(dumpingData: CreateDumpingDto, operatorId: string, token: string) {
+        const supabase = this.supabaseService.getClient(token);
+
+        const { error } = await supabase.rpc('perform_dumping', {
+            p_operator_id: operatorId,
+            p_customer_code: dumpingData.customer_code,
+            p_source_storage: dumpingData.source_storage_number,
+            p_dest_storage: dumpingData.destination_storage_number,
+            p_source_psi_before: dumpingData.source_psi_before,
+            p_source_psi_after: dumpingData.source_psi_after,
+            p_dest_psi_before: dumpingData.destination_psi_before,
+            p_dest_psi_after: dumpingData.destination_psi_after,
+            p_source_temp_before: dumpingData.source_temp_before,
+            p_source_temp_after: dumpingData.source_temp_after,
+            p_dest_temp: dumpingData.destination_temp,
+            p_psi_out: dumpingData.psi_out,
+            p_flow_turbine_before: dumpingData.flow_turbine_before,
+            p_flow_turbine_after: dumpingData.flow_turbine_after,
+            p_time_before: dumpingData.time_before, // [BARU]
+            p_time_after: dumpingData.time_after    // [BARU]
+        });
+
+        this.handleSupabaseError(error, 'perform dumping');
+        return { message: 'Dumping process recorded successfully.' };
     }
 }
