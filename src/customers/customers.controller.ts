@@ -10,7 +10,7 @@ import {
   UseGuards,
   HttpCode,
   Request,
-} from '@nestjs/common'; // <-- Tambahkan 'Request'
+} from '@nestjs/common';
 import { CustomersService } from './customers.service';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateCustomerDto } from './dto/create-customer.dto';
@@ -25,7 +25,7 @@ import { Roles } from '../auth/roles.decorator';
 @ApiBearerAuth('JWT-auth')
 @Roles('admin')
 export class CustomersController {
-  constructor(private readonly customersService: CustomersService) {}
+  constructor(private readonly customersService: CustomersService) { }
 
   private getTokenFromRequest(req): string {
     return req.headers.authorization.split(' ')[1];
@@ -45,12 +45,8 @@ export class CustomersController {
     return this.customersService.findAll(token);
   }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get a customer by ID (Admin Only)' })
-  findOneById(@Param('id', ParseIntPipe) id: number, @Request() req) {
-    const token = this.getTokenFromRequest(req);
-    return this.customersService.findOneById(id, token);
-  }
+  // REMOVED: findOneById method (GET /customers/:id) was here.
+  // REASON: Not used by the frontend application.
 
   @Put(':id')
   @ApiOperation({ summary: 'Update a customer by ID (Admin Only)' })
@@ -71,10 +67,6 @@ export class CustomersController {
     return this.customersService.remove(id, token);
   }
 
-  @Get('test/connection')
-  @ApiOperation({ summary: 'Test Supabase connection (Admin Only)' })
-  async testSupabase(@Request() req) {
-    const token = this.getTokenFromRequest(req);
-    return this.customersService.testConnection(token);
-  }
+  // REMOVED: testSupabase method (GET /customers/test/connection) was here.
+  // REASON: Not used by the frontend application.
 }

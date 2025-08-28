@@ -11,7 +11,7 @@ import { PostgrestError } from '@supabase/supabase-js';
 
 @Injectable()
 export class CustomersService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   private handleSupabaseError(
     error: PostgrestError | null,
@@ -56,16 +56,8 @@ export class CustomersService {
     return data;
   }
 
-  async findOneById(id: number, token: string) {
-    const supabase = this.supabaseService.getClient(token);
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('id', id)
-      .single();
-    this.handleSupabaseError(error, `findOneById customer: ${id}`);
-    return data;
-  }
+  // REMOVED: findOneById method was here.
+  // REASON: The corresponding controller endpoint was unused.
 
   async update(id: number, updateData: UpdateCustomerDto, token: string) {
     const supabase = this.supabaseService.getClient(token);
@@ -85,22 +77,6 @@ export class CustomersService {
     this.handleSupabaseError(error, `remove customer: ${id}`);
   }
 
-  async testConnection(token: string) {
-    const supabase = this.supabaseService.getClient(token);
-    try {
-      const { data, error } = await supabase
-        .from('customers')
-        .select('id')
-        .limit(1);
-      this.handleSupabaseError(error, 'testConnection');
-      return {
-        status: 'ok',
-        message: 'Supabase connection successful',
-        sample: data?.[0] || null,
-      };
-    } catch (err) {
-      console.error('Failed to test Supabase connection', err as any);
-      throw new InternalServerErrorException('Supabase connection failed');
-    }
-  }
+  // REMOVED: testConnection method was here.
+  // REASON: The corresponding controller endpoint was unused.
 }
