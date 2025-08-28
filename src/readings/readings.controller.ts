@@ -8,6 +8,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { QueryReadingDto } from './dto/query-reading.dto';
 import { CreateDumpingDto } from './dto/create-dumping.dto';
+import { CreateChangeDto } from './dto/create-change.dto';
 
 @ApiTags('Readings')
 @Controller('readings')
@@ -16,75 +17,87 @@ import { CreateDumpingDto } from './dto/create-dumping.dto';
 export class ReadingsController {
     constructor(private readonly readingsService: ReadingsService) { }
 
-    private getTokenFromRequest(req): string {
+    private getTokenFromRequest(req: any): string {
         return req.headers.authorization.split(' ')[1];
     }
 
+    // Endpoint untuk entri pembacaan normal
     @Post()
-    @ApiOperation({ summary: 'Create a new reading (Admin & Operator)' })
-    create(@Body() createReadingDto: CreateReadingDto, @Request() req) {
+    @ApiOperation({ summary: 'Create a new standard reading' })
+    create(@Body() createReadingDto: CreateReadingDto, @Request() req: any) {
         const operatorId = req.user.id;
         const token = this.getTokenFromRequest(req);
-        return this.readingsService.create({ ...createReadingDto, manual_created_at: createReadingDto.manual_created_at || new Date().toTimeString().slice(0, 5) }, operatorId, token);
+        return this.readingsService.create(createReadingDto, operatorId, token);
+    }
+
+    // Endpoint KHUSUS untuk proses DUMPING
+    @Post('dumping')
+    @Roles('admin', 'operator')
+    @ApiOperation({ summary: 'Record a dumping (gas transfer) process' })
+    createDumping(@Body() createDumpingDto: CreateDumpingDto, @Request() req: any) {
+        const operatorId = req.user.id;
+        const token = this.getTokenFromRequest(req);
+        return this.readingsService.createDumping(createDumpingDto, operatorId, token);
+    }
+
+    // Endpoint KHUSUS untuk proses CHANGE (Pergantian Storage)
+    @Post('change')
+    @Roles('admin', 'operator')
+    @ApiOperation({ summary: 'Record a storage change process' })
+    createChange(@Body() createChangeDto: CreateChangeDto, @Request() req: any) {
+        const operatorId = req.user.id;
+        const token = this.getTokenFromRequest(req);
+        return this.readingsService.createChange(createChangeDto, operatorId, token);
     }
 
     @Get('stats/operator-counts')
-    @Roles('admin', 'operator') // [DIUBAH]
-    @ApiOperation({ summary: 'Get reading counts per operator (Admin & Operator)' })
+    @Roles('admin', 'operator')
+    @ApiOperation({ summary: 'Get reading counts per operator' })
     getOperatorCounts() {
         return this.readingsService.getOperatorCounts();
     }
 
     @Get('mine')
     @Roles('operator')
-    @ApiOperation({ summary: 'Get recent readings submitted by me (Operator Only)' })
-    findMyReadings(@Request() req) {
+    @ApiOperation({ summary: 'Get recent readings submitted by the current operator' })
+    findMyReadings(@Request() req: any) {
         const operatorId = req.user.id;
         const token = this.getTokenFromRequest(req);
         return this.readingsService.findReadingsByOperator(operatorId, token);
     }
 
     @Get()
-    @Roles('admin', 'operator') // [DIUBAH]
-    @ApiOperation({ summary: 'Get all readings with filters (Admin & Operator)' })
-    @ApiQuery({ name: 'customer', required: false, type: String, description: 'Filter by customer code' })
-    @ApiQuery({ name: 'operator', required: false, type: String, description: 'Filter by operator username' })
-    @ApiQuery({ name: 'searchTerm', required: false, type: String, description: 'Search term' })
-    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'], description: 'Sort order' })
-    findAll(@Request() req, @Query() query: QueryReadingDto) {
+    @Roles('admin', 'operator')
+    @ApiOperation({ summary: 'Get all readings with filters' })
+    @ApiQuery({ name: 'customer', required: false, type: String })
+    @ApiQuery({ name: 'operator', required: false, type: String })
+    @ApiQuery({ name: 'searchTerm', required: false, type: String })
+    @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+    findAll(@Request() req: any, @Query() query: QueryReadingDto) {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.findAll(token, query);
     }
 
     @Get(':id')
-    @Roles('admin', 'operator') // [DIUBAH]
-    @ApiOperation({ summary: 'Get a single reading by ID (Admin & Operator)' })
-    findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    @Roles('admin', 'operator')
+    @ApiOperation({ summary: 'Get a single reading by ID' })
+    findOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.findOne(id, token);
     }
 
     @Put(':id')
-    @ApiOperation({ summary: 'Update a reading (Admin unrestricted, Operator limited by RLS)' })
-    update(@Param('id', ParseIntPipe) id: number, @Body() updateReadingDto: UpdateReadingDto, @Request() req) {
+    @ApiOperation({ summary: 'Update a reading' })
+    update(@Param('id', ParseIntPipe) id: number, @Body() updateReadingDto: UpdateReadingDto, @Request() req: any) {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.update(id, updateReadingDto, token);
     }
 
     @Delete(':id')
     @HttpCode(204)
-    @ApiOperation({ summary: 'Delete a reading (Admin unrestricted, Operator limited by RLS)' })
-    remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    @ApiOperation({ summary: 'Delete a reading' })
+    remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.remove(id, token);
-    }
-
-    @Post('dumping')
-    @Roles('admin', 'operator')
-    @ApiOperation({ summary: 'Create new readings from a dumping process (Admin & Operator)' })
-    createDumping(@Body() createDumpingDto: CreateDumpingDto, @Request() req) {
-        const operatorId = req.user.id;
-        const token = this.getTokenFromRequest(req);
-        return this.readingsService.createDumping(createDumpingDto, operatorId, token);
     }
 }

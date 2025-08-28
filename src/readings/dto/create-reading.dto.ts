@@ -1,5 +1,6 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsNumber, IsOptional, Matches } from 'class-validator';
+// src/readings/dto/create-reading.dto.ts
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, Matches, IsIn } from 'class-validator';
 
 export class CreateReadingDto {
     @ApiProperty({ example: 'CUST-001' }) @IsString() @IsNotEmpty() customer_code: string;
@@ -10,15 +11,8 @@ export class CreateReadingDto {
     @ApiProperty({ example: 120.7 }) @IsNumber() flow_turbine: number;
     @ApiProperty({ required: false }) @IsString() @IsOptional() remarks?: string;
     @ApiProperty({ example: 4, required: true }) @IsNumber() @IsNotEmpty() fixed_storage_quantity: number;
-
-    // [PERUBAHAN] Field ini merepresentasikan input 'time' dari form
-    @ApiProperty({
-        example: '13:45',
-        required: true,
-        description: 'Waktu pencatatan aktual dari form (HH:mm)',
-    })
-    @IsString()
-    @IsNotEmpty()
-    @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Invalid time format. Use HH:mm' })
-    manual_created_at: string; // Sebelumnya 'manual_created_at' di DTO adalah DateString, diubah menjadi string HH:mm
+    @ApiProperty({ example: '13:45', required: true, description: 'Waktu pencatatan aktual dari form (HH:mm)' })
+    @IsString() @IsNotEmpty() @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Format waktu tidak valid. Gunakan HH:mm' })
+    manual_created_at: string;
 }
+
