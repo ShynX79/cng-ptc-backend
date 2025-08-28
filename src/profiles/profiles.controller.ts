@@ -35,13 +35,8 @@ export class ProfilesController {
         return this.profilesService.findAll(token);
     }
 
-    @Get(':id')
-    @Roles('admin')
-    @ApiOperation({ summary: 'Get a user profile by ID (Admin Only)' })
-    findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req) {
-        const token = this.getTokenFromRequest(req);
-        return this.profilesService.findOne(id, token);
-    }
+    // REMOVED: findOne method (GET /profiles/:id) was here.
+    // REASON: Not used by the frontend application.
 
     @Put(':id')
     @Roles('admin')

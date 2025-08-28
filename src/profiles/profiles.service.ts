@@ -55,6 +55,7 @@ export class ProfilesService {
             });
 
         if (profileError) {
+            // Rollback user creation if profile insertion fails
             await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
             this.handleSupabaseError(profileError, 'create profile');
         }
@@ -70,12 +71,8 @@ export class ProfilesService {
         return data;
     }
 
-    async findOne(id: string, token: string) {
-        const supabase = this.supabaseService.getClient(token);
-        const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
-        this.handleSupabaseError(error, `findOne profile: ${id}`);
-        return data;
-    }
+    // REMOVED: findOne method was here.
+    // REASON: The corresponding controller endpoint was unused.
 
     async update(id: string, updateProfileDto: UpdateProfileDto, token: string) {
         const supabaseAdmin = this.supabaseService.getAdminClient();
@@ -95,7 +92,11 @@ export class ProfilesService {
             this.handleSupabaseError(profileError, `update profile username: ${id}`);
         }
 
-        return this.findOne(id, token);
+        // Fetch and return the updated profile data directly
+        const supabase = this.supabaseService.getClient(token);
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', id).single();
+        this.handleSupabaseError(error, `fetch updated profile: ${id}`);
+        return data;
     }
 
     async remove(id: string) {
