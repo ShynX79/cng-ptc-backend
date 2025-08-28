@@ -1,3 +1,5 @@
+// src/app.module.ts
+
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
@@ -12,10 +14,11 @@ import { ProfilesModule } from './profiles/profiles.module';
 import { ReadingsModule } from './readings/readings.module';
 import { StoragesModule } from './storages/storages.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ExportModule } from './export/export.module'; // <-- Tambahkan ini
 
 @Module({
   imports: [
-    // 1. Konfigurasi dimuat pertama kali
+    // 1. Konfigurasi
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
@@ -24,22 +27,22 @@ import { AnalyticsModule } from './analytics/analytics.module';
         SUPABASE_URL: Joi.string().required(),
         SUPABASE_ANON_KEY: Joi.string().required(),
         SUPABASE_SERVICE_ROLE_KEY: Joi.string().required(),
-        JWT_SECRET: Joi.string().required(), // Ini tidak lagi dipakai, tapi biarkan saja
-        SUPABASE_JWT_SECRET: Joi.string().required(), // Pastikan ini ada di .env
+        SUPABASE_JWT_SECRET: Joi.string().required(),
         JWT_EXPIRES_IN: Joi.string().default('1d'),
       }),
     }),
 
-    // 2. Modul inti (Auth dan Supabase) dimuat setelah konfigurasi
+    // 2. Modul inti
     SupabaseModule,
     AuthModule,
 
-    // 3. Modul Fitur dimuat terakhir
+    // 3. Modul Fitur
     CustomersModule,
     ProfilesModule,
     ReadingsModule,
     StoragesModule,
     AnalyticsModule,
+    ExportModule, // <-- Tambahkan ini
   ],
 })
-export class AppModule {}
+export class AppModule { }
