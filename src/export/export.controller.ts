@@ -5,10 +5,12 @@ import { ExportService } from './export.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { RolesGuard } from '../auth/roles.guard'; // <- 1. IMPORT ROLESGUARD
+import { Roles } from '../auth/roles.decorator'; // <- 1. IMPORT ROLES
 
 @ApiTags('Export')
 @Controller('export')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard) // <- 2. TAMBAHKAN ROLESGUARD DI SINI
 @ApiBearerAuth('JWT-auth')
 export class ExportController {
     constructor(private readonly exportService: ExportService) { }
@@ -18,6 +20,7 @@ export class ExportController {
     }
 
     @Get('readings')
+    @Roles('admin') // <- 3. TAMBAHKAN DECORATOR ROLES('ADMIN')
     @ApiQuery({ name: 'startDate', required: true, type: String, description: 'Start date (YYYY-MM-DD)' })
     @ApiQuery({ name: 'endDate', required: true, type: String, description: 'End date (YYYY-MM-DD)' })
     async exportReadings(
