@@ -1,6 +1,5 @@
-// src/readings/dto/create-reading.dto.ts
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsNumber, IsOptional, Matches, IsIn } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, Matches } from 'class-validator';
 
 export class CreateReadingDto {
     @ApiProperty({ example: 'CUST-001' }) @IsString() @IsNotEmpty() customer_code: string;
@@ -15,4 +14,3 @@ export class CreateReadingDto {
     @IsString() @IsNotEmpty() @Matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, { message: 'Format waktu tidak valid. Gunakan HH:mm' })
     manual_created_at: string;
 }
-
