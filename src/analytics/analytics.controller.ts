@@ -13,6 +13,12 @@ import { Roles } from '../auth/roles.decorator';
 export class AnalyticsController {
     constructor(private readonly analyticsService: AnalyticsService) { }
 
+    @Get('stats')
+    @ApiOperation({ summary: 'Get overall reading statistics (Admin Only)' })
+    getOverallStats() {
+        return this.analyticsService.getOverallStats();
+    }
+
     @Get('readings-over-time')
     @ApiOperation({ summary: 'Get reading statistics over a time range (Admin Only)' })
     @ApiQuery({ name: 'startDate', required: true, example: '2025-08-01' })
