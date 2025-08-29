@@ -148,4 +148,13 @@ export class ReadingsService {
         }
         return data;
     }
+
+    async removeAll(token: string) {
+        const supabase = this.supabaseService.getClient(token);
+
+        // Filter .not('id', 'is', null) adalah cara aman untuk menargetkan semua baris
+        const { error } = await supabase.from('readings').delete().not('id', 'is', null);
+
+        this.handleSupabaseError(error, `remove all readings`);
+    }
 }

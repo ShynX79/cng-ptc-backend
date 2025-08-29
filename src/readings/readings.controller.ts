@@ -99,4 +99,14 @@ export class ReadingsController {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.remove(id, token);
     }
+
+    // ✅ Delete all readings (Admin Only)
+    @Delete('all')
+    @Roles('admin') // PENTING: Hanya admin yang bisa mengakses endpoint ini
+    @HttpCode(204)
+    @ApiOperation({ summary: 'Delete all readings (Admin Only)' })
+    removeAll(@Request() req: any) {
+        const token = this.getTokenFromRequest(req);
+        return this.readingsService.removeAll(token);
+    }
 }
