@@ -50,14 +50,11 @@ export class CustomersService {
   }
 
   async findAll(token: string) {
-    const supabase = this.supabaseService.getClient(token);
+    const supabase = this.supabaseService.getAdminClient();
     const { data, error } = await supabase.from('customers').select('*');
     this.handleSupabaseError(error, 'findAll customers');
     return data;
   }
-
-  // REMOVED: findOneById method was here.
-  // REASON: The corresponding controller endpoint was unused.
 
   async update(id: number, updateData: UpdateCustomerDto, token: string) {
     const supabase = this.supabaseService.getClient(token);
@@ -76,7 +73,4 @@ export class CustomersService {
     const { error } = await supabase.from('customers').delete().eq('id', id);
     this.handleSupabaseError(error, `remove customer: ${id}`);
   }
-
-  // REMOVED: testConnection method was here.
-  // REASON: The corresponding controller endpoint was unused.
 }

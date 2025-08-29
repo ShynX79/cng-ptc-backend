@@ -23,7 +23,6 @@ import { Roles } from '../auth/roles.decorator';
 @Controller('customers')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth('JWT-auth')
-@Roles('admin')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) { }
 
@@ -32,6 +31,7 @@ export class CustomersController {
   }
 
   @Post()
+  @Roles('admin')
   @ApiOperation({ summary: 'Create a new customer (Admin Only)' })
   create(@Body() createCustomerDto: CreateCustomerDto, @Request() req) {
     const token = this.getTokenFromRequest(req);
@@ -39,16 +39,15 @@ export class CustomersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all customers (Admin Only)' })
+  @Roles('admin', 'operator')
+  @ApiOperation({ summary: 'Get all customers (Admin & Operator)' })
   findAll(@Request() req) {
     const token = this.getTokenFromRequest(req);
     return this.customersService.findAll(token);
   }
 
-  // REMOVED: findOneById method (GET /customers/:id) was here.
-  // REASON: Not used by the frontend application.
-
   @Put(':id')
+  @Roles('admin')
   @ApiOperation({ summary: 'Update a customer by ID (Admin Only)' })
   update(
     @Param('id', ParseIntPipe) id: number,
@@ -60,13 +59,11 @@ export class CustomersController {
   }
 
   @Delete(':id')
+  @Roles('admin')
   @HttpCode(204)
   @ApiOperation({ summary: 'Delete a customer by ID (Admin Only)' })
   remove(@Param('id', ParseIntPipe) id: number, @Request() req) {
     const token = this.getTokenFromRequest(req);
     return this.customersService.remove(id, token);
   }
-
-  // REMOVED: testSupabase method (GET /customers/test/connection) was here.
-  // REASON: Not used by the frontend application.
 }
