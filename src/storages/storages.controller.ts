@@ -27,7 +27,8 @@ export class StoragesController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Get all storages (Admin Only)' })
+    @ApiOperation({ summary: 'Get all storages (Admin & Operator)' })
+    @Roles('admin', 'operator') // <- PERUBAHAN DI SINI
     findAll(@Request() req) {
         const token = this.getTokenFromRequest(req);
         return this.storagesService.findAll(token);
