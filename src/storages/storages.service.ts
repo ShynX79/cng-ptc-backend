@@ -50,6 +50,16 @@ export class StoragesService {
         return data;
     }
 
+    async findRelevantForOperator(customerCode: string, token: string) {
+        const supabase = this.supabaseService.getClient(token);
+        const { data, error } = await supabase.rpc('get_relevant_storages', {
+            customer_code_param: customerCode,
+        });
+
+        this.handleSupabaseError(error, `findRelevantForOperator for customer: ${customerCode}`);
+        return data;
+    }
+
     async update(id: number, updateDto: UpdateStorageDto, token: string) {
         const supabase = this.supabaseService.getClient(token);
         const { data, error } = await supabase.from('storages').update(updateDto).eq('id', id).select().single();

@@ -28,7 +28,7 @@ export class StoragesController {
 
     @Get()
     @ApiOperation({ summary: 'Get all storages (Admin & Operator)' })
-    @Roles('admin', 'operator') // <- PERUBAHAN DI SINI
+    @Roles('admin', 'operator')
     findAll(@Request() req) {
         const token = this.getTokenFromRequest(req);
         return this.storagesService.findAll(token);
@@ -39,6 +39,14 @@ export class StoragesController {
     findOne(@Param('id', ParseIntPipe) id: number, @Request() req) {
         const token = this.getTokenFromRequest(req);
         return this.storagesService.findOneById(id, token);
+    }
+
+    @Get('relevant/:customerCode')
+    @Roles('admin', 'operator')
+    @ApiOperation({ summary: 'Get relevant storages for an operator (Admin & Operator)' })
+    findRelevantStorages(@Param('customerCode') customerCode: string, @Request() req) {
+        const token = this.getTokenFromRequest(req);
+        return this.storagesService.findRelevantForOperator(customerCode, token);
     }
 
     @Put(':id')

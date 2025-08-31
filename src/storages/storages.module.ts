@@ -1,4 +1,3 @@
-// backend-api-nest/src/storages/storages.module.ts
 import { Module } from '@nestjs/common';
 import { StoragesController } from './storages.controller';
 import { StoragesService } from './storages.service';
