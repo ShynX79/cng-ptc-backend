@@ -14,7 +14,6 @@ import { ProfilesModule } from './profiles/profiles.module';
 import { ReadingsModule } from './readings/readings.module';
 import { StoragesModule } from './storages/storages.module';
 import { AnalyticsModule } from './analytics/analytics.module';
-import { ExportModule } from './export/export.module'; // <-- Tambahkan ini
 
 @Module({
   imports: [
@@ -42,7 +41,6 @@ import { ExportModule } from './export/export.module'; // <-- Tambahkan ini
     ReadingsModule,
     StoragesModule,
     AnalyticsModule,
-    ExportModule, // <-- Tambahkan ini
   ],
 })
-export class AppModule { }
+export class AppModule {}
