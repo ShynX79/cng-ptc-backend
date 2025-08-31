@@ -64,15 +64,35 @@ export class ProfilesService {
         return { message: 'User created successfully.', user: { ...result, id: authData.user.id } };
     }
 
-    async findAll(token: string) {
-        const supabase = this.supabaseService.getClient(token);
-        const { data, error } = await supabase.from('profiles').select('*');
-        this.handleSupabaseError(error, 'findAll profiles');
-        return data;
+async findAll(token: string) {
+    const supabaseAdmin = this.supabaseService.getAdminClient();
+
+    // 1. Ambil semua data pengguna (termasuk email) dari Auth
+    const { data: { users: authUsers }, error: authError } = await supabaseAdmin.auth.admin.listUsers();
+    if (authError) {
+        throw new InternalServerErrorException(authError.message);
     }
 
-    // REMOVED: findOne method was here.
-    // REASON: The corresponding controller endpoint was unused.
+    // 2. Ambil semua data profil (username, role)
+    const { data: profiles, error: profileError } = await supabaseAdmin
+        .from('profiles')
+        .select('*');
+    this.handleSupabaseError(profileError, 'findAll profiles');
+    if (!profiles) return [];
+
+    // 3. Gabungkan keduanya berdasarkan ID
+    const usersWithProfiles = authUsers.map(user => {
+        const profile = profiles.find(p => p.id === user.id);
+        return {
+            id: user.id,
+            username: profile?.username || 'N/A',
+            role: profile?.role || 'N/A',
+            email: user.email,
+        };
+    }).filter(p => p.role !== 'N/A');
+
+    return usersWithProfiles;
+}
 
     async update(id: string, updateProfileDto: UpdateProfileDto, token: string) {
         const supabaseAdmin = this.supabaseService.getAdminClient();

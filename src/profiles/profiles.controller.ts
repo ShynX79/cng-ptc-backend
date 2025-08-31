@@ -35,9 +35,6 @@ export class ProfilesController {
         return this.profilesService.findAll(token);
     }
 
-    // REMOVED: findOne method (GET /profiles/:id) was here.
-    // REASON: Not used by the frontend application.
-
     @Put(':id')
     @Roles('admin')
     @ApiOperation({ summary: 'Update a user profile (Admin Only)' })
