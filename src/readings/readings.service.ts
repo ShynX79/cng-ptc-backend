@@ -9,7 +9,6 @@ import { CreateReadingDto } from './dto/create-reading.dto';
 import { UpdateReadingDto } from './dto/update-reading.dto';
 import { PostgrestError } from '@supabase/supabase-js';
 import { QueryReadingDto } from './dto/query-reading.dto';
-// --- IMPORTS BARU ---
 import {
     RawReading,
     ProcessedRow,
@@ -35,25 +34,25 @@ export class ReadingsService {
     async create(readingData: CreateReadingDto, operatorId: string, token: string) {
         const supabase = this.supabaseService.getClient(token);
         const localDate = new Date();
-        const [hourStr, minuteStr] = readingData.manual_created_at.split(':');
-        let hour = parseInt(hourStr, 10);
-        const minute = parseInt(minuteStr, 10);
 
-        if (minute >= 45) {
-            hour += 1;
-        }
+        // --- LOGIKA PEMBULATAN DIHILANGKAN ---
+        // Waktu sekarang diambil persis dari input DTO (HH:mm)
+        const [hour, minute] = readingData.manual_created_at.split(':').map(Number);
 
+        // Buat timestamp menggunakan tanggal hari ini dengan jam dan menit dari input
         const recordedDate = new Date(
             localDate.getFullYear(),
             localDate.getMonth(),
             localDate.getDate(),
-            hour, 0, 0
+            hour,
+            minute,
+            0, // Detik diatur ke 0
         );
 
         const finalTimestamp = recordedDate.toISOString();
 
         const { error } = await supabase.rpc('add_reading_with_backfill', {
-            p_recorded_at: finalTimestamp,
+            p_recorded_at: finalTimestamp, // Menggunakan timestamp yang sudah presisi
             p_customer_code: readingData.customer_code,
             p_operator_id: operatorId,
             p_storage_number: readingData.storage_number,
@@ -146,10 +145,6 @@ export class ReadingsService {
         }
         return data;
     }
-
-    // =======================================================================
-    // --- LOGIKA BARU DARI NEXT.JS DIMULAI DI SINI ---
-    // =======================================================================
 
     async getProcessedReadingsByCustomer(token: string, customerCode: string): Promise<ProcessedRow[]> {
         const supabase = this.supabaseService.getClient(token);
