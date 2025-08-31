@@ -1,5 +1,3 @@
-// FILE: src/readings/readings.controller.ts
-
 import {
     Controller,
     Get,
@@ -102,7 +100,7 @@ export class ReadingsController {
 
     // ✅ Delete all readings (Admin Only)
     @Delete('all')
-    @Roles('admin') // PENTING: Hanya admin yang bisa mengakses endpoint ini
+    @Roles('admin')
     @HttpCode(204)
     @ApiOperation({ summary: 'Delete all readings (Admin Only)' })
     removeAll(@Request() req: any) {
