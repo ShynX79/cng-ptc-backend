@@ -18,6 +18,7 @@ import {
     ApiOperation,
     ApiBearerAuth,
     ApiQuery,
+    ApiParam,
 } from '@nestjs/swagger';
 import { CreateReadingDto } from './dto/create-reading.dto';
 import { UpdateReadingDto } from './dto/update-reading.dto';
@@ -37,7 +38,21 @@ export class ReadingsController {
         return req.headers.authorization.split(' ')[1];
     }
 
-    // ✅ Create new reading
+    // --- ENDPOINT BARU UNTUK DATA YANG SUDAH DIPROSES ---
+    @Get('processed/:customerCode')
+    @Roles('admin', 'operator')
+    @ApiOperation({ summary: 'Get table-ready processed readings for a specific customer' })
+    @ApiParam({ name: 'customerCode', description: 'The customer code to fetch and process data for', example: 'CUST-001' })
+    findProcessedReadings(
+        @Request() req: any,
+        @Param('customerCode') customerCode: string,
+    ) {
+        const token = this.getTokenFromRequest(req);
+        return this.readingsService.getProcessedReadingsByCustomer(token, customerCode);
+    }
+
+    // --- ENDPOINT YANG SUDAH ADA SEBELUMNYA ---
+
     @Post()
     @ApiOperation({ summary: 'Create a new standard reading' })
     create(@Body() createReadingDto: CreateReadingDto, @Request() req: any) {
@@ -46,7 +61,6 @@ export class ReadingsController {
         return this.readingsService.create(createReadingDto, operatorId, token);
     }
 
-    // ✅ Get counts per operator
     @Get('stats/operator-counts')
     @Roles('admin', 'operator')
     @ApiOperation({ summary: 'Get reading counts per operator' })
@@ -54,7 +68,6 @@ export class ReadingsController {
         return this.readingsService.getOperatorCounts();
     }
 
-    // ✅ Get current operator's readings
     @Get('mine')
     @Roles('operator')
     @ApiOperation({ summary: 'Get recent readings submitted by the current operator' })
@@ -64,7 +77,6 @@ export class ReadingsController {
         return this.readingsService.findReadingsByOperator(operatorId, token);
     }
 
-    // ✅ Get all readings with filters
     @Get()
     @Roles('admin', 'operator')
     @ApiOperation({ summary: 'Get all readings with filters' })
@@ -77,7 +89,6 @@ export class ReadingsController {
         return this.readingsService.findAll(token, query);
     }
 
-    // ✅ Update reading
     @Put(':id')
     @ApiOperation({ summary: 'Update a reading' })
     update(
@@ -89,7 +100,6 @@ export class ReadingsController {
         return this.readingsService.update(id, updateReadingDto, token);
     }
 
-    // ✅ Delete reading
     @Delete(':id')
     @HttpCode(204)
     @ApiOperation({ summary: 'Delete a reading' })
@@ -98,7 +108,6 @@ export class ReadingsController {
         return this.readingsService.remove(id, token);
     }
 
-    // ✅ Delete all readings (Admin Only)
     @Delete('all')
     @Roles('admin')
     @HttpCode(204)
@@ -108,3 +117,4 @@ export class ReadingsController {
         return this.readingsService.removeAll(token);
     }
 }
+
