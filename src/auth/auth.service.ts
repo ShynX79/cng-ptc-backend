@@ -53,10 +53,6 @@ export class AuthService {
         };
     }
 
-    // [DIHAPUS] Metode registerOperator dan verifyAdminToken dihilangkan
-    // async registerOperator(...) { ... }
-    // verifyAdminToken(...) { ... }
-
     async logout(token: string) {
         const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
         const supabaseKey = this.configService.get<string>('SUPABASE_ANON_KEY');

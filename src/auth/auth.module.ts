@@ -17,10 +17,7 @@ import { SupabaseModule } from '../supabase/supabase.module';
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => ({
-                // [FIX] Gunakan secret dari Supabase untuk memvalidasi token
                 secret: configService.get<string>('SUPABASE_JWT_SECRET'),
-                // Opsi signOptions tidak lagi relevan karena kita tidak membuat token baru
-                // signOptions: { expiresIn: configService.get<string>('JWT_EXPIRES_IN') || '1d' },
             }),
         }),
     ],

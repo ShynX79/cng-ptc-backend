@@ -1,9 +1,8 @@
-// backend-api-nest/src/auth/jwt.strategy.ts
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { SupabaseService } from '../supabase/supabase.service'; // <-- Tambahkan impor ini
+import { SupabaseService } from '../supabase/supabase.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -11,7 +10,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     constructor(
         configService: ConfigService,
-        // [FIX] Inject SupabaseService agar bisa query ke database
         private readonly supabaseService: SupabaseService, 
     ) {
         const secret = configService.get<string>('SUPABASE_JWT_SECRET');
@@ -34,8 +32,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         }
 
         const userId = payload.sub;
-        // [FIX] Gunakan admin client untuk mengambil profil pengguna.
-        // Ini adalah operasi sistem internal untuk verifikasi.
         const supabase = this.supabaseService.getAdminClient();
         const { data: profile } = await supabase
             .from('profiles')
@@ -47,7 +43,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
             throw new UnauthorizedException('User profile not found.');
         }
 
-        // Kembalikan objek user yang lengkap dengan role dari tabel profiles
         return { id: payload.sub, email: payload.email, role: profile.role };
     }
 }

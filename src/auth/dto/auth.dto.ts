@@ -7,5 +7,3 @@ export class LoginDto {
     @ApiProperty({ example: 'admin1234' })
     password: string;
 }
-
-// [DIHAPUS] Class RegisterOperatorDto dihilangkan sepenuhnya
