@@ -1,8 +1,9 @@
-// src/app.module.ts
-
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
+
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 
 // Core Modules
 import { SupabaseModule } from './supabase/supabase.module';
@@ -14,6 +15,7 @@ import { ProfilesModule } from './profiles/profiles.module';
 import { ReadingsModule } from './readings/readings.module';
 import { StoragesModule } from './storages/storages.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ExportModule } from './export/export.module';
 
 @Module({
   imports: [
@@ -41,6 +43,10 @@ import { AnalyticsModule } from './analytics/analytics.module';
     ReadingsModule,
     StoragesModule,
     AnalyticsModule,
+    ExportModule,
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
-export class AppModule {}
+export class AppModule { }
+

@@ -1,16 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // 1. AKTIFKAN KEMBALI GLOBAL PREFIX
   app.setGlobalPrefix('api');
 
+  // 2. UBAH KONFIGURASI CORS
   app.enableCors({
-    origin: true,
-
+    origin: '*', // Izinkan semua domain untuk development
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: [
@@ -21,7 +23,7 @@ async function bootstrap() {
     ],
   });
 
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
 
   const config = new DocumentBuilder()
     .setTitle('CNG PTC API')
@@ -43,12 +45,15 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  const port = process.env.PORT || 3000;
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('PORT') || 3000;
   await app.listen(port);
 
-  console.log(`Aplikasi berjalan di: ${await app.getUrl()}`);
-  console.log(
-    `Dokumentasi Swagger tersedia di: ${await app.getUrl()}/api-docs`,
+  const appUrl = await app.getUrl();
+  Logger.log(`🚀 Aplikasi berjalan di: ${appUrl}`, 'Bootstrap');
+  Logger.log(
+    `📚 Dokumentasi Swagger tersedia di: ${appUrl}/api-docs`,
+    'Bootstrap',
   );
 }
 bootstrap();
