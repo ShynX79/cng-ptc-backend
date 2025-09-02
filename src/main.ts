@@ -1,29 +1,22 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Konfigurasi tetap dibutuhkan untuk local development
   app.setGlobalPrefix('api');
-
   app.enableCors({
     origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'Accept',
-      'ngrok-skip-browser-warning',
-    ],
   });
-
   app.useGlobalPipes(new ValidationPipe());
 
   const config = new DocumentBuilder()
-    .setTitle('CNG PTC API')
+    .setTitle('CNG PTC API (Local)')
     .setDescription('Dokumentasi lengkap untuk backend aplikasi CNG PTC.')
     .setVersion('1.0')
     .addBearerAuth(
@@ -42,17 +35,15 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  // 👇 Tambahin ini biar Vercel bisa serve request sebelum listen
-  await app.init();
-
+  // Hanya listen() saat dijalankan secara lokal
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
-  console.log(`Aplikasi berjalan di: ${await app.getUrl()}`);
-  console.log(
-    `Dokumentasi Swagger tersedia di: ${await app.getUrl()}/api-docs`,
-  );
+  console.log(`Aplikasi lokal berjalan di: http://localhost:${port}`);
+  console.log(`Swagger lokal tersedia di: http://localhost:${port}/api-docs`);
 }
-bootstrap();
 
-
+// Hanya panggil bootstrap jika file ini dijalankan langsung
+if (require.main === module) {
+  bootstrap();
+}
