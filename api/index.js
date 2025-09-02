@@ -1,17 +1,21 @@
 const express = require("express");
 const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("./swagger.json"); // file swagger docs kamu
+const swaggerDocument = require("./swagger.json");
 
 const app = express();
 
-// Route sample
+// Route root "/"
+app.get("/", (req, res) => {
+    res.send("✅ API Backend is running. Cek /api atau /api-docs");
+});
+
+// Route sample "/api"
 app.get("/api", (req, res) => {
     res.json({ message: "API is working on Vercel!" });
 });
 
-// Swagger docs
+// Swagger docs "/api-docs"
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-// ❌ jangan pakai app.listen()
-// ✅ harus export app
+// Export (bukan listen)
 module.exports = app;
