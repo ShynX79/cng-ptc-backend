@@ -5,22 +5,26 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ✅ CORS
+  app.enableCors({
+    origin: [
+      'http://localhost:3000', // FE local
+      'https://your-frontend.vercel.app', // FE deploy
+    ],
+    credentials: true,
+  });
+
+  // ✅ Swagger
   const config = new DocumentBuilder()
-    .setTitle('CNG Backend API')
-    .setDescription('Swagger API documentation')
+    .setTitle('API Docs')
+    .setDescription('Swagger API for CNG-PTC')
     .setVersion('1.0')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document); // swagger di /api
 
-  // Swagger UI di /api
-  SwaggerModule.setup('api', app, document);
-
-  // Swagger JSON manual di /api-json
-  app.getHttpAdapter().getInstance().get('/api-json', (req, res) => {
-    res.json(document);
-  });
-
-  await app.listen(3000);
+  await app.listen(process.env.PORT || 3000);
 }
 bootstrap();
