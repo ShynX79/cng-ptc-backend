@@ -1,21 +1,37 @@
-const express = require("express");
-const swaggerUi = require("swagger-ui-express");
-const swaggerDocument = require("./swagger.json");
+import express from "express";
+import swaggerUi from "swagger-ui-express";
+import swaggerJsdoc from "swagger-jsdoc";
 
 const app = express();
 
-// Route root "/"
-app.get("/", (req, res) => {
-    res.send("✅ API Backend is running. Cek /api atau /api-docs");
+// Swagger options
+const swaggerOptions = {
+    definition: {
+        openapi: "3.0.0",
+        info: {
+            title: "CNG-PTC API",
+            version: "1.0.0",
+            description: "Dokumentasi API Swagger",
+        },
+    },
+    // cari semua file js/ts untuk swagger
+    apis: ["./src/**/*.js"],
+};
+
+const swaggerSpec = swaggerJsdoc(swaggerOptions);
+
+// Swagger JSON
+app.get("/swagger.json", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.send(swaggerSpec);
 });
 
-// Route sample "/api"
+// Swagger UI
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Endpoint tes
 app.get("/api", (req, res) => {
-    res.json({ message: "API is working on Vercel!" });
+    res.json({ message: "API is running ✅" });
 });
 
-// Swagger docs "/api-docs"
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-// Export (bukan listen)
-module.exports = app;
+export default app;
