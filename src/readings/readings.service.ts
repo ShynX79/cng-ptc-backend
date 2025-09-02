@@ -9,6 +9,7 @@ import { CreateReadingDto } from './dto/create-reading.dto';
 import { UpdateReadingDto } from './dto/update-reading.dto';
 import { PostgrestError } from '@supabase/supabase-js';
 import { QueryReadingDto } from './dto/query-reading.dto';
+import { CreateDumpingDto } from './dto/dumping-reading.dto';
 import {
     RawReading,
     ProcessedRow,
@@ -34,8 +35,7 @@ export class ReadingsService {
     async create(readingData: CreateReadingDto, operatorId: string, token: string) {
         const supabase = this.supabaseService.getClient(token);
         const localDate = new Date();
-
-        // --- LOGIKA PEMBULATAN DIHILANGKAN ---
+        
         // Waktu sekarang diambil persis dari input DTO (HH:mm)
         const [hour, minute] = readingData.manual_created_at.split(':').map(Number);
 
@@ -52,7 +52,7 @@ export class ReadingsService {
         const finalTimestamp = recordedDate.toISOString();
 
         const { error } = await supabase.rpc('add_reading_with_backfill', {
-            p_recorded_at: finalTimestamp, // Menggunakan timestamp yang sudah presisi
+            p_recorded_at: finalTimestamp,
             p_customer_code: readingData.customer_code,
             p_operator_id: operatorId,
             p_storage_number: readingData.storage_number,
@@ -263,6 +263,31 @@ export class ReadingsService {
             }
         }
         return result;
+    }
+
+        async createDumping(dumpingData: CreateDumpingDto, operatorId: string, token: string) {
+        const supabase = this.supabaseService.getClient(token);
+
+        const { error } = await supabase.rpc('handle_dumping_operation', {
+            p_customer_code: dumpingData.customer_code,
+            p_operator_id: operatorId, // Gunakan ID dari token, lebih aman
+            p_source_storage_number: dumpingData.source_storage_number,
+            p_destination_storage_number: dumpingData.destination_storage_number,
+            p_source_psi_before: dumpingData.source_psi_before,
+            p_source_psi_after: dumpingData.source_psi_after,
+            p_source_temp_before: dumpingData.source_temp_before,
+            p_source_temp_after: dumpingData.source_temp_after,
+            p_destination_psi_after: dumpingData.destination_psi_after,
+            p_destination_temp: dumpingData.destination_temp,
+            p_flow_turbine_before: dumpingData.flow_turbine_before,
+            p_flow_turbine_after: dumpingData.flow_turbine_after,
+            p_psi_out: dumpingData.psi_out,
+            p_time_before: dumpingData.time_before,
+            p_time_after: dumpingData.time_after,
+        });
+
+        this.handleSupabaseError(error, 'create dumping reading');
+        return { message: 'Dumping operation recorded successfully.' };
     }
 }
 

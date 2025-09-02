@@ -5,7 +5,7 @@ export interface RawReading {
     storage_number: string;
     operation_type: 'manual' | 'dumping' | string;
     flow_turbine: number | string;
-    recorded_at: string; // ISO 8601 string
+    recorded_at: string;
     fixed_storage_quantity?: number;
     psi?: number;
     temp?: number;
@@ -23,7 +23,7 @@ export interface ChangeRow {
     id: string;
     isChangeRow: true;
     totalFlow: number;
-    duration: string; // Format HH:mm
+    duration: string;
     customer_code: string;
     recorded_at: string;
 }

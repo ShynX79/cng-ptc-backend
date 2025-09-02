@@ -26,6 +26,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { QueryReadingDto } from './dto/query-reading.dto';
+import { CreateDumpingDto } from './dto/dumping-reading.dto';
 
 @ApiTags('Readings')
 @Controller('readings')
@@ -50,8 +51,6 @@ export class ReadingsController {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.getProcessedReadingsByCustomer(token, customerCode);
     }
-
-    // --- ENDPOINT YANG SUDAH ADA SEBELUMNYA ---
 
     @Post()
     @ApiOperation({ summary: 'Create a new standard reading' })
@@ -115,6 +114,14 @@ export class ReadingsController {
     removeAll(@Request() req: any) {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.removeAll(token);
+    }
+
+     @Post('dumping')
+    @ApiOperation({ summary: 'Create new readings from a dumping operation' })
+    createDumping(@Body() createDumpingDto: CreateDumpingDto, @Request() req: any) {
+        const operatorId = req.user.id;
+        const token = this.getTokenFromRequest(req);
+        return this.readingsService.createDumping(createDumpingDto, operatorId, token);
     }
 }
 
