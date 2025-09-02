@@ -1,3 +1,13 @@
-export default function handler(req, res) {
-    res.status(200).json({ message: "Hello from Vercel API!" });
-}
+// FILE: api/index.js
+const express = require("express");
+const app = express();
+
+app.get("/", (req, res) => {
+    res.json({ message: "Backend API is running 🎉" });
+});
+
+app.get("/hello", (req, res) => {
+    res.json({ message: "Hello from API!" });
+});
+
+module.exports = app;
