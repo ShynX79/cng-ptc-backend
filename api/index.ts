@@ -6,10 +6,8 @@ import { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 
-// Kita akan cache instance aplikasi agar tidak perlu dibuat ulang di setiap request (cold start)
 let cachedApp: INestApplication;
 
-// Fungsi bootstrap yang sudah dimodifikasi
 async function bootstrap(): Promise<INestApplication> {
     if (cachedApp) {
         return cachedApp;
@@ -18,8 +16,8 @@ async function bootstrap(): Promise<INestApplication> {
     const expressApp = express();
     const app = await NestFactory.create(AppModule, new ExpressAdapter(expressApp));
 
-    // KONFIGURASI UNTUK VERCE DEPLOYMENT
-    // app.setGlobalPrefix('api'); // <-- BARIS INI DIHAPUS, KARENA MENYEBABKAN KONFLIK DENGAN ROUTING VERCEL
+    // KEMBALIKAN GLOBAL PREFIX, ini penting untuk routing yang konsisten
+    app.setGlobalPrefix('api');
 
     app.enableCors({
         origin: true,
@@ -49,25 +47,20 @@ async function bootstrap(): Promise<INestApplication> {
             },
             'JWT-auth',
         )
-        .addServer('/api') // Menambahkan /api sebagai base path di UI Swagger
         .build();
 
     const document = SwaggerModule.createDocument(app, config);
-    // URL untuk Swagger UI akan menjadi /api/api-docs
+    // Path Swagger akan otomatis menjadi /api/api-docs karena global prefix
     SwaggerModule.setup('api-docs', app, document);
 
-    // Inisialisasi aplikasi
     await app.init();
     cachedApp = app;
     return app;
 }
 
-// Handler utama yang akan diekspor untuk Vercel
 export default async function handler(req: any, res: any) {
     const app = await bootstrap();
     const expressApp = app.getHttpAdapter().getInstance();
-
-    // Teruskan request ke instance Express dari NestJS
     expressApp(req, res);
 }
 
