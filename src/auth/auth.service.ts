@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, UnauthorizedException, NotFoundException, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, BadRequestException, UnauthorizedException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { JwtService } from '@nestjs/jwt';
 import { createClient } from '@supabase/supabase-js';
@@ -6,25 +6,13 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
-    // Tambahkan logger untuk debugging
-    private readonly logger = new Logger(AuthService.name);
-
     constructor(
         private readonly supabaseService: SupabaseService,
         private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
-    ) {
-        // --- BLOK DEBUGGING UNTUK MEMVERIFIKASI KONEKSI .env ---
-        const url = this.configService.get<string>('SUPABASE_URL');
-        const serviceKey = this.configService.get<string>('SUPABASE_SERVICE_ROLE_KEY');
-
-        this.logger.debug(`[ENV] Supabase URL Loaded: ${url}`);
-        this.logger.debug(`[ENV] Supabase Service Key Loaded: ${serviceKey ? '*** KEY DITEMUKAN ***' : '!!! KEY TIDAK DITEMUKAN / UNDEFINED !!!'}`);
-        // --- AKHIR BLOK DEBUGGING ---
-    }
+    ) { }
 
     async getProfile(user: any) {
-        // ... (kode getProfile Anda tidak perlu diubah)
         const userId = user.id;
         const { data: profile, error } = await this.supabaseService
             .getAdminClient()
@@ -44,8 +32,6 @@ export class AuthService {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
         if (error || !data.user || !data.session) {
-            // Log error asli dari Supabase untuk debugging
-            this.logger.error('Login failed:', error?.message);
             throw new UnauthorizedException('Kredensial login tidak valid');
         }
 
@@ -56,7 +42,6 @@ export class AuthService {
             .single();
 
         if (profileError || !profile) {
-            this.logger.error(`Profile not found for user ${data.user.id}`, profileError?.message);
             throw new UnauthorizedException('Profil pengguna tidak ditemukan');
         }
 
@@ -69,7 +54,6 @@ export class AuthService {
     }
 
     async logout(token: string) {
-        // ... (kode logout Anda tidak perlu diubah)
         const supabaseUrl = this.configService.get<string>('SUPABASE_URL');
         const supabaseKey = this.configService.get<string>('SUPABASE_ANON_KEY');
 
@@ -90,4 +74,3 @@ export class AuthService {
         return { message: 'Logout berhasil' };
     }
 }
-
