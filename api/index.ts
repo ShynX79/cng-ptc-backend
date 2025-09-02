@@ -50,8 +50,14 @@ async function bootstrap(): Promise<INestApplication> {
         .build();
 
     const document = SwaggerModule.createDocument(app, config);
+
+    // Menambahkan opsi kustom untuk memastikan aset UI dimuat dengan benar
+    const swaggerCustomOptions = {
+        customSiteTitle: 'CNG PTC API Docs',
+    };
+
     // Path Swagger akan otomatis menjadi /api/api-docs karena global prefix
-    SwaggerModule.setup('api-docs', app, document);
+    SwaggerModule.setup('api-docs', app, document, swaggerCustomOptions);
 
     await app.init();
     cachedApp = app;
