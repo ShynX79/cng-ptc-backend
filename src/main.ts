@@ -10,6 +10,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: true,
+
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
     allowedHeaders: [
@@ -42,9 +43,6 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document);
 
-  // 👇 Tambahin ini biar Vercel bisa serve request sebelum listen
-  await app.init();
-
   const port = process.env.PORT || 3000;
   await app.listen(port);
 
@@ -54,4 +52,3 @@ async function bootstrap() {
   );
 }
 bootstrap();
-
