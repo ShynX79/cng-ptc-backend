@@ -34,19 +34,23 @@ export class ReadingsService {
         throw new InternalServerErrorException(`An unexpected database error occurred: ${error.message}`);
     }
 
+    private createTimestampInWIB(timeString: string): string {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Asia/Jakarta',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+        });
+        const dateParts = formatter.format(now);
+        const isoStringWIB = `${dateParts}T${timeString}:00.000+07:00`;
+        const finalDate = new Date(isoStringWIB);
+        return finalDate.toISOString();
+    }
+
     async create(readingData: CreateReadingDto, operatorId: string, token: string) {
         const supabase = this.supabaseService.getClient(token);
-        const localDate = new Date();
-        const [hour, minute] = readingData.manual_created_at.split(':').map(Number);
-        const recordedDate = new Date(
-            localDate.getFullYear(),
-            localDate.getMonth(),
-            localDate.getDate(),
-            hour,
-            minute,
-            0,
-        );
-        const finalTimestamp = recordedDate.toISOString();
+        const finalTimestamp = this.createTimestampInWIB(readingData.manual_created_at);
         const { error } = await supabase.rpc('add_reading_with_backfill', {
             p_recorded_at: finalTimestamp,
             p_customer_code: readingData.customer_code,
@@ -59,6 +63,7 @@ export class ReadingsService {
             p_flow_turbine: readingData.flow_turbine,
             p_remarks: readingData.remarks,
         });
+
         this.handleSupabaseError(error, 'create reading with backfill');
         return { message: 'Reading created successfully.' };
     }
@@ -77,17 +82,7 @@ export class ReadingsService {
         if (!lastReading) {
             throw new BadRequestException('Cannot create a STOP reading. No previous reading found for this storage.');
         }
-        const localDate = new Date();
-        const [hour, minute] = stopData.manual_created_at.split(':').map(Number);
-        const recordedDate = new Date(
-            localDate.getFullYear(),
-            localDate.getMonth(),
-            localDate.getDate(),
-            hour,
-            minute,
-            0,
-        );
-        const finalTimestamp = recordedDate.toISOString();
+        const finalTimestamp = this.createTimestampInWIB(stopData.manual_created_at);
         const { error: insertError } = await supabase.from('readings').insert({
             recorded_at: finalTimestamp,
             customer_code: stopData.customer_code,
@@ -101,6 +96,7 @@ export class ReadingsService {
             remarks: stopData.remarks,
             operation_type: 'stop',
         });
+
         this.handleSupabaseError(insertError, 'create stop reading');
         return { message: 'STOP reading created successfully.' };
     }
@@ -139,8 +135,7 @@ export class ReadingsService {
         this.handleSupabaseError(error, 'findAll readings with pagination');
         return rawReadings || [];
     }
-
-    // --- PEMBARUAN LOGIKA UPDATE ---
+    
     async update(id: number, updateDto: UpdateReadingDto, token: string, operatorId: string, userRole: string) {
         const supabase = this.supabaseService.getClient(token);
 
@@ -149,12 +144,12 @@ export class ReadingsService {
             .select('created_at, operator_id')
             .eq('id', id)
             .single();
-
+        
         this.handleSupabaseError(findError, `find reading for update: ${id}`);
         if (!readingToUpdate) {
             throw new NotFoundException(`Reading with ID ${id} not found.`);
         }
-
+        
         if (userRole === 'operator') {
             if (readingToUpdate.operator_id !== operatorId) {
                 throw new ForbiddenException('You can only edit your own entries.');
@@ -175,9 +170,7 @@ export class ReadingsService {
         this.handleSupabaseError(error, `update reading id: ${id}`);
         return data;
     }
-    // --- AKHIR PEMBARUAN ---
 
-    // --- PEMBARUAN LOGIKA REMOVE ---
     async remove(id: number, token: string, operatorId: string, userRole: string) {
         const supabase = this.supabaseService.getClient(token);
 
@@ -186,7 +179,7 @@ export class ReadingsService {
             .select('created_at, operator_id')
             .eq('id', id)
             .single();
-
+            
         this.handleSupabaseError(findError, `find reading for deletion: ${id}`);
         if (!readingToDelete) {
             throw new NotFoundException(`Reading with ID ${id} not found.`);
@@ -201,11 +194,10 @@ export class ReadingsService {
                 throw new ForbiddenException('Delete time limit of 2 hours has passed.');
             }
         }
-
+        
         const { error } = await supabase.from('readings').delete().eq('id', id);
         this.handleSupabaseError(error, `remove reading id: ${id}`);
     }
-    // --- AKHIR PEMBARUAN ---
 
     async removeAll(token: string) {
         const supabase = this.supabaseService.getClient(token);
@@ -294,7 +286,7 @@ export class ReadingsService {
                 const pad = (num: number) => String(num).padStart(2, '0');
                 const durationStr = `${pad(Math.floor(diffMinutes / 60))}:${pad(diffMinutes % 60)}`;
                 if (lastReadingInBlock.operation_type === 'stop') {
-                    result.push({
+                     result.push({
                         id: `stop-${lastReadingInBlock.id}`, isStopRow: true,
                         totalFlow, duration: durationStr,
                         customer_code: lastReadingInBlock.customer_code,

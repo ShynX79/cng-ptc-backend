@@ -131,7 +131,6 @@ export class ProfilesService {
       .select('*')
       .eq('id', id)
       .single();
-
     this.handleSupabaseError(error, `fetch updated profile: ${id}`);
     return data;
   }

@@ -60,7 +60,7 @@ export class ReadingsController {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.create(createReadingDto, operatorId, token);
     }
-
+    
     @Post('stop')
     @ApiOperation({ summary: 'Create a new STOP reading' })
     createStop(@Body() createStopDto: CreateStopDto, @Request() req: any) {
@@ -136,7 +136,7 @@ export class ReadingsController {
         return this.readingsService.removeAll(token);
     }
 
-    @Post('dumping')
+     @Post('dumping')
     @ApiOperation({ summary: 'Create new readings from a dumping operation' })
     createDumping(@Body() createDumpingDto: CreateDumpingDto, @Request() req: any) {
         const operatorId = req.user.id;
