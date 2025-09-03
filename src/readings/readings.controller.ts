@@ -28,7 +28,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { QueryReadingDto } from './dto/query-reading.dto';
 import { CreateDumpingDto } from './dto/dumping-reading.dto';
-import { CreateStopDto } from './dto/stop-reading.dto'; // <-- IMPORT BARU
+import { CreateStopDto } from './dto/stop-reading.dto';
 
 @ApiTags('Readings')
 @Controller('readings')
@@ -41,7 +41,6 @@ export class ReadingsController {
         return req.headers.authorization.split(' ')[1];
     }
 
-    // --- ENDPOINT BARU UNTUK DATA YANG SUDAH DIPROSES ---
     @Get('processed/:customerCode')
     @Roles('admin', 'operator')
     @ApiOperation({ summary: 'Get table-ready processed readings for a specific customer' })
@@ -62,7 +61,6 @@ export class ReadingsController {
         return this.readingsService.create(createReadingDto, operatorId, token);
     }
 
-    // --- ENDPOINT BARU UNTUK STOP ---
     @Post('stop')
     @ApiOperation({ summary: 'Create a new STOP reading' })
     createStop(@Body() createStopDto: CreateStopDto, @Request() req: any) {
@@ -70,7 +68,6 @@ export class ReadingsController {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.createStop(createStopDto, operatorId, token);
     }
-    // --- AKHIR ENDPOINT BARU ---
 
     @Get('stats/operator-counts')
     @Roles('admin', 'operator')
@@ -95,29 +92,40 @@ export class ReadingsController {
     @ApiQuery({ name: 'operator', required: false, type: String })
     @ApiQuery({ name: 'searchTerm', required: false, type: String })
     @ApiQuery({ name: 'sortOrder', required: false, enum: ['asc', 'desc'] })
+    @ApiQuery({ name: 'timeRange', required: false, enum: ['day', 'week', 'month', 'all'] })
     findAll(@Request() req: any, @Query() query: QueryReadingDto) {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.findAll(token, query);
     }
 
+    // --- PEMBARUAN ENDPOINT UPDATE ---
     @Put(':id')
-    @ApiOperation({ summary: 'Update a reading' })
+    @Roles('admin', 'operator') // Operator sekarang bisa mengakses endpoint ini
+    @ApiOperation({ summary: 'Update a reading (Admin: any, Operator: own within 2 hours)' })
     update(
         @Param('id', ParseIntPipe) id: number,
         @Body() updateReadingDto: UpdateReadingDto,
         @Request() req: any,
     ) {
         const token = this.getTokenFromRequest(req);
-        return this.readingsService.update(id, updateReadingDto, token);
+        const operatorId = req.user.id;
+        const userRole = req.user.role; // Mendapatkan peran dari user yang sudah divalidasi
+        return this.readingsService.update(id, updateReadingDto, token, operatorId, userRole);
     }
+    // --- AKHIR PEMBARUAN ---
 
+    // --- PEMBARUAN ENDPOINT DELETE ---
     @Delete(':id')
+    @Roles('admin', 'operator') // Operator sekarang bisa mengakses endpoint ini
     @HttpCode(204)
-    @ApiOperation({ summary: 'Delete a reading' })
+    @ApiOperation({ summary: 'Delete a reading (Admin: any, Operator: own within 2 hours)' })
     remove(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
         const token = this.getTokenFromRequest(req);
-        return this.readingsService.remove(id, token);
+        const operatorId = req.user.id;
+        const userRole = req.user.role;
+        return this.readingsService.remove(id, token, operatorId, userRole);
     }
+    // --- AKHIR PEMBARUAN ---
 
     @Delete('all')
     @Roles('admin')
