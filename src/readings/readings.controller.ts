@@ -116,7 +116,7 @@ export class ReadingsController {
         return this.readingsService.removeAll(token);
     }
 
-     @Post('dumping')
+    @Post('dumping')
     @ApiOperation({ summary: 'Create new readings from a dumping operation' })
     createDumping(@Body() createDumpingDto: CreateDumpingDto, @Request() req: any) {
         const operatorId = req.user.id;
@@ -124,4 +124,3 @@ export class ReadingsController {
         return this.readingsService.createDumping(createDumpingDto, operatorId, token);
     }
 }
-

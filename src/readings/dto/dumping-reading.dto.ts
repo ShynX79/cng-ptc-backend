@@ -1,4 +1,4 @@
-// backend-ptc/src/readings/dto/dumping-reading.dto.ts
+// src/readings/dto/dumping-reading.dto.ts
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsNumber, Matches } from 'class-validator';
 

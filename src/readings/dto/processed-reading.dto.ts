@@ -1,9 +1,10 @@
 // Tipe data mentah dari database yang dibutuhkan untuk proses
 export interface RawReading {
+    created_at: string | number | Date;
     id: number;
     customer_code: string;
     storage_number: string;
-    operation_type: 'manual' | 'dumping' | string;
+    operation_type: 'manual' | 'dumping' | 'stop' | string;
     flow_turbine: number | string;
     recorded_at: string;
     fixed_storage_quantity?: number;
@@ -22,6 +23,16 @@ export interface ReadingWithFlowMeter extends RawReading {
 export interface ChangeRow {
     id: string;
     isChangeRow: true;
+    totalFlow: number;
+    duration: string;
+    customer_code: string;
+    recorded_at: string;
+}
+
+// Baris merah "STOP"
+export interface StopRow {
+    id: string;
+    isStopRow: true;
     totalFlow: number;
     duration: string;
     customer_code: string;
@@ -53,6 +64,7 @@ export interface DumpingSummaryRow {
 export type ProcessedRow =
     | ReadingWithFlowMeter
     | ChangeRow
+    | StopRow
     | DumpingTotalRow
     | DumpingSummaryRow;
 

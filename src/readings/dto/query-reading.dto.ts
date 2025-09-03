@@ -6,4 +6,6 @@ export class QueryReadingDto {
     @ApiPropertyOptional({ description: 'Filter by operator username', default: 'all' }) @IsString() @IsOptional() operator?: string;
     @ApiPropertyOptional({ description: 'Search term for customer or operator' }) @IsString() @IsOptional() searchTerm?: string;
     @ApiPropertyOptional({ description: 'Sort order', enum: ['asc', 'desc'], default: 'asc' }) @IsIn(['asc', 'desc']) @IsOptional() sortOrder?: 'asc' | 'desc';
+    @ApiPropertyOptional({ description: 'Filter by time range', enum: ['day', 'week', 'month', 'all'], default: 'week' })
+    @IsIn(['day', 'week', 'month', 'all']) @IsOptional() timeRange?: 'day' | 'week' | 'month' | 'all';
 }
