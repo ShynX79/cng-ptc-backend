@@ -70,28 +70,15 @@ export class ReadingsService {
 
     async createStop(stopData: CreateStopDto, operatorId: string, token: string) {
         const supabase = this.supabaseService.getClient(token);
-        const { data: lastReading, error: lastReadingError } = await supabase
-            .from('readings')
-            .select('fixed_storage_quantity, temp, psi_out')
-            .eq('customer_code', stopData.customer_code)
-            .eq('storage_number', stopData.storage_number)
-            .order('recorded_at', { ascending: false })
-            .limit(1)
-            .single();
-        this.handleSupabaseError(lastReadingError, 'fetching last reading for stop');
-        if (!lastReading) {
-            throw new BadRequestException('Cannot create a STOP reading. No previous reading found for this storage.');
-        }
         const finalTimestamp = this.createTimestampInWIB(stopData.manual_created_at);
         const { error: insertError } = await supabase.from('readings').insert({
             recorded_at: finalTimestamp,
             customer_code: stopData.customer_code,
             operator_id: operatorId,
             storage_number: stopData.storage_number,
-            fixed_storage_quantity: lastReading.fixed_storage_quantity,
             psi: stopData.psi,
-            temp: lastReading.temp,
-            psi_out: lastReading.psi_out,
+            temp: stopData.temp,
+            psi_out: stopData.psi_out,
             flow_turbine: stopData.flow_turbine,
             remarks: stopData.remarks,
             operation_type: 'stop',
@@ -228,13 +215,46 @@ export class ReadingsService {
         return data;
     }
 
-    async getProcessedReadingsByCustomer(token: string, customerCode: string): Promise<ProcessedRow[]> {
+    async getProcessedReadingsByCustomer(token: string, customerCode: string, timeRange: 'day' | 'week' | 'month' | 'all' = 'week'): Promise<ProcessedRow[]> {
         const supabase = this.supabaseService.getClient(token);
+
+        const now = new Date();
+        let startDate = new Date('1970-01-01'); // Default untuk 'all'
+
+        if (timeRange !== 'all') {
+            // Dapatkan komponen tanggal (tahun, bulan, hari) sesuai zona waktu Asia/Jakarta
+            const yearWIB = parseInt(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta', year: 'numeric' }));
+            const monthWIB = parseInt(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta', month: '2-digit' }));
+            const dayWIB = parseInt(now.toLocaleString('en-US', { timeZone: 'Asia/Jakarta', day: '2-digit' }));
+
+            // Buat objek Date sementara untuk kalkulasi hari dalam seminggu
+            const todayInWIB = new Date(Date.UTC(yearWIB, monthWIB - 1, dayWIB));
+
+            switch (timeRange) {
+                case 'day':
+                    // Set startDate ke 00:00 WIB (yaitu jam -7 dari UTC)
+                    startDate = new Date(Date.UTC(yearWIB, monthWIB - 1, dayWIB, -7));
+                    break;
+                case 'week':
+                    const dayOfWeek = todayInWIB.getUTCDay(); // 0 untuk Minggu, 6 untuk Sabtu
+                    const firstDayOfWeek = new Date(todayInWIB);
+                    firstDayOfWeek.setUTCDate(todayInWIB.getUTCDate() - dayOfWeek);
+                    startDate = new Date(Date.UTC(firstDayOfWeek.getUTCFullYear(), firstDayOfWeek.getUTCMonth(), firstDayOfWeek.getUTCDate(), -7));
+                    break;
+                case 'month':
+                    // Set startDate ke tanggal 1 di bulan ini, pukul 00:00 WIB
+                    startDate = new Date(Date.UTC(yearWIB, monthWIB - 1, 1, -7));
+                    break;
+            }
+        }
+
         const { data: rawReadings, error } = await supabase
             .from('readings')
             .select('id, created_at, customer_code, storage_number, operation_type, flow_turbine, recorded_at, fixed_storage_quantity, psi, temp, psi_out, remarks')
             .eq('customer_code', customerCode)
+            .gte('recorded_at', startDate.toISOString())
             .order('recorded_at', { ascending: true });
+
         this.handleSupabaseError(error, `fetching readings for processing customer: ${customerCode}`);
         if (!rawReadings || rawReadings.length === 0) {
             return [];

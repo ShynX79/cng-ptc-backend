@@ -45,12 +45,14 @@ export class ReadingsController {
     @Roles('admin', 'operator')
     @ApiOperation({ summary: 'Get table-ready processed readings for a specific customer' })
     @ApiParam({ name: 'customerCode', description: 'The customer code to fetch and process data for', example: 'CUST-001' })
+    @ApiQuery({ name: 'timeRange', required: false, enum: ['day', 'week', 'month', 'all'], description: 'Filter data by a time range' })
     findProcessedReadings(
         @Request() req: any,
         @Param('customerCode') customerCode: string,
+        @Query('timeRange') timeRange: 'day' | 'week' | 'month' | 'all' = 'week',
     ) {
         const token = this.getTokenFromRequest(req);
-        return this.readingsService.getProcessedReadingsByCustomer(token, customerCode);
+        return this.readingsService.getProcessedReadingsByCustomer(token, customerCode, timeRange);
     }
 
     @Post()

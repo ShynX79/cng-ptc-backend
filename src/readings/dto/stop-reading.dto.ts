@@ -13,11 +13,19 @@ export class CreateStopDto {
     @IsNotEmpty()
     storage_number: string;
 
-    @ApiProperty({ example: 1363 })
+    @ApiProperty({ example: 1363, description: 'Tekanan dalam satuan PSI' })
     @IsNumber()
     psi: number;
 
-    @ApiProperty({ example: 442502 })
+    @ApiProperty({ example: 35.6, description: 'Temperatur dalam °C' })
+    @IsNumber()
+    temp: number;
+
+    @ApiProperty({ example: 7.5, description: 'Tekanan keluar dalam satuan Bar' })
+    @IsNumber()
+    psi_out: number;
+
+    @ApiProperty({ example: 442502, description: 'Flow meter / turbin' })
     @IsNumber()
     flow_turbine: number;
 
