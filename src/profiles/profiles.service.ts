@@ -12,7 +12,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class ProfilesService {
-  constructor(private readonly supabaseService: SupabaseService) {}
+  constructor(private readonly supabaseService: SupabaseService) { }
 
   private handleSupabaseError(
     error: PostgrestError | null,
@@ -36,7 +36,6 @@ export class ProfilesService {
     throw new InternalServerErrorException(error.message);
   }
 
-  // ... (method create, findAll, update tidak berubah)
   async create(createProfileDto: CreateProfileDto) {
     const supabaseAdmin = this.supabaseService.getAdminClient();
     const { data: authData, error: authError } =
@@ -45,6 +44,7 @@ export class ProfilesService {
         password: createProfileDto.password,
         email_confirm: true,
       });
+
     if (authError) {
       console.error('Supabase auth error:', authError.message);
       if (authError.message.includes('User already registered')) {
@@ -52,6 +52,7 @@ export class ProfilesService {
       }
       throw new InternalServerErrorException(authError.message);
     }
+
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert({
@@ -59,10 +60,12 @@ export class ProfilesService {
         username: createProfileDto.username,
         role: createProfileDto.role,
       });
+
     if (profileError) {
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       this.handleSupabaseError(profileError, 'create profile');
     }
+
     const { password, ...result } = createProfileDto;
     return {
       message: 'User created successfully.',
@@ -76,14 +79,18 @@ export class ProfilesService {
       data: { users: authUsers },
       error: authError,
     } = await supabaseAdmin.auth.admin.listUsers();
+
     if (authError) {
       throw new InternalServerErrorException(authError.message);
     }
+
     const { data: profiles, error: profileError } = await supabaseAdmin
       .from('profiles')
       .select('*');
+
     this.handleSupabaseError(profileError, 'findAll profiles');
     if (!profiles) return [];
+
     const usersWithProfiles = authUsers
       .map((user) => {
         const profile = profiles.find((p) => p.id === user.id);
@@ -95,11 +102,13 @@ export class ProfilesService {
         };
       })
       .filter((p) => p.role !== 'N/A');
+
     return usersWithProfiles;
   }
 
   async update(id: string, updateProfileDto: UpdateProfileDto, token: string) {
     const supabaseAdmin = this.supabaseService.getAdminClient();
+
     if (updateProfileDto.password) {
       const { error: authError } =
         await supabaseAdmin.auth.admin.updateUserById(id, {
@@ -107,6 +116,7 @@ export class ProfilesService {
         });
       if (authError) throw new InternalServerErrorException(authError.message);
     }
+
     if (updateProfileDto.username) {
       const { error: profileError } = await supabaseAdmin
         .from('profiles')
@@ -114,29 +124,46 @@ export class ProfilesService {
         .eq('id', id);
       this.handleSupabaseError(profileError, `update profile username: ${id}`);
     }
+
     const supabase = this.supabaseService.getClient(token);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', id)
       .single();
+
     this.handleSupabaseError(error, `fetch updated profile: ${id}`);
     return data;
   }
 
-  // 👇 LOGIKA YANG DIPERBAIKI ADA DI SINI 👇
-  async remove(id: string): Promise<void> {
+  // ✅ FIXED DELETE ACCOUNT LOGIC
+  async remove(id: string): Promise<{ message: string }> {
     const supabaseAdmin = this.supabaseService.getAdminClient();
 
-    const { error } = await supabaseAdmin.rpc('delete_user_fully', {
-      user_id: id,
-    });
+    // cek user ada di auth
+    const { data: userData, error: userError } =
+      await supabaseAdmin.auth.admin.getUserById(id);
 
-    if (error) {
-      console.error('Error calling delete_user_fully function:', error);
+    if (userError || !userData?.user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+
+    // hapus profile dari tabel
+    const { error: profileError } = await supabaseAdmin
+      .from('profiles')
+      .delete()
+      .eq('id', id);
+
+    this.handleSupabaseError(profileError, 'delete profile');
+
+    // hapus dari Supabase Auth
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+    if (authError) {
       throw new InternalServerErrorException(
-        'Failed to delete user completely.',
+        `Failed to delete user from auth: ${authError.message}`,
       );
     }
+
+    return { message: `User ${id} deleted successfully` };
   }
 }
