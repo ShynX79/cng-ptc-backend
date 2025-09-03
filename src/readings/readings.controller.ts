@@ -1,3 +1,4 @@
+// src/readings/readings.controller.ts
 import {
     Controller,
     Get,
@@ -27,6 +28,7 @@ import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { QueryReadingDto } from './dto/query-reading.dto';
 import { CreateDumpingDto } from './dto/dumping-reading.dto';
+import { CreateStopDto } from './dto/stop-reading.dto'; // <-- IMPORT BARU
 
 @ApiTags('Readings')
 @Controller('readings')
@@ -59,6 +61,16 @@ export class ReadingsController {
         const token = this.getTokenFromRequest(req);
         return this.readingsService.create(createReadingDto, operatorId, token);
     }
+
+    // --- ENDPOINT BARU UNTUK STOP ---
+    @Post('stop')
+    @ApiOperation({ summary: 'Create a new STOP reading' })
+    createStop(@Body() createStopDto: CreateStopDto, @Request() req: any) {
+        const operatorId = req.user.id;
+        const token = this.getTokenFromRequest(req);
+        return this.readingsService.createStop(createStopDto, operatorId, token);
+    }
+    // --- AKHIR ENDPOINT BARU ---
 
     @Get('stats/operator-counts')
     @Roles('admin', 'operator')
