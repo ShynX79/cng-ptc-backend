@@ -128,7 +128,7 @@ export class ReadingsService {
 
         const { data: readingToUpdate, error: findError } = await supabase
             .from('readings')
-            .select('created_at, operator_id')
+            .select('created_at, operator_id, customer_code, storage_number, fixed_storage_quantity, psi, temp, psi_out, flow_turbine, remarks, recorded_at') // Ambil lebih banyak field
             .eq('id', id)
             .single();
         
@@ -147,15 +147,30 @@ export class ReadingsService {
             }
         }
 
-        const { data, error } = await supabase
+        // Panggil fungsi RPC, bukan .update()
+        const { error } = await supabase.rpc('update_reading_and_backfill', {
+            p_id: id,
+            p_customer_code: readingToUpdate.customer_code, // customer_code tidak bisa diubah
+            p_storage_number: updateDto.storage_number || readingToUpdate.storage_number,
+            p_fixed_storage_quantity: updateDto.fixed_storage_quantity || readingToUpdate.fixed_storage_quantity,
+            p_psi: updateDto.psi || readingToUpdate.psi,
+            p_temp: updateDto.temp || readingToUpdate.temp,
+            p_psi_out: updateDto.psi_out || readingToUpdate.psi_out,
+            p_flow_turbine: updateDto.flow_turbine || readingToUpdate.flow_turbine,
+            p_remarks: updateDto.remarks || readingToUpdate.remarks,
+            p_recorded_at: updateDto.recorded_at || readingToUpdate.recorded_at
+        });
+
+        this.handleSupabaseError(error, `update and backfill reading id: ${id}`);
+        
+        // Ambil kembali data yang sudah terupdate untuk dikembalikan ke frontend
+        const { data: updatedData } = await supabase
             .from('readings')
-            .update(updateDto)
-            .eq('id', id)
             .select()
+            .eq('id', id)
             .single();
 
-        this.handleSupabaseError(error, `update reading id: ${id}`);
-        return data;
+        return updatedData;
     }
 
     async remove(id: number, token: string, operatorId: string, userRole: string) {
