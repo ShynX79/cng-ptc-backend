@@ -88,41 +88,51 @@ export class ReadingsService {
         return { message: 'STOP reading created successfully.' };
     }
 
-    async findAll(token: string, filters: QueryReadingDto) {
-        const supabase = this.supabaseService.getClient(token);
-        const now = new Date();
-        let startDate = new Date();
-        let endDate = new Date(now);
-        switch (filters.timeRange) {
-            case 'day':
-                startDate = new Date(now.setHours(0, 0, 0, 0));
-                break;
-            case 'week':
-                const firstDayOfWeek = now.getDate() - now.getDay();
-                startDate = new Date(now.setDate(firstDayOfWeek));
-                startDate.setHours(0, 0, 0, 0);
-                break;
-            case 'month':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-                startDate.setHours(0, 0, 0, 0);
-                break;
-            case 'all':
-            default:
-                startDate = new Date('1970-01-01');
-                break;
+    async findAll(token: string) {
+        const supabaseAdmin = this.supabaseService.getAdminClient();
+        let page = 1;
+        let allAuthUsers: any[] = [];
+
+        while (true) {
+            const {
+                data: { users },
+                error,
+            } = await supabaseAdmin.auth.admin.listUsers({ page, perPage: 100 });
+
+            if (error) {
+                throw new InternalServerErrorException(error.message);
+            }
+
+            if (!users || users.length === 0) break;
+
+            allAuthUsers = [...allAuthUsers, ...users];
+
+            if (users.length < 100) break;
+            page++;
         }
-        const { data: rawReadings, error } = await supabase.rpc('get_readings_paginated_by_time', {
-            customer_filter: filters.customer || 'all',
-            operator_filter: filters.operator || 'all',
-            search_term: filters.searchTerm || '',
-            sort_order: filters.sortOrder || 'asc',
-            start_date: startDate.toISOString(),
-            end_date: endDate.toISOString(),
-        });
-        this.handleSupabaseError(error, 'findAll readings with pagination');
-        return rawReadings || [];
+
+        const { data: profiles, error: profileError } = await supabaseAdmin
+            .from('profiles')
+            .select('*');
+
+        this.handleSupabaseError(profileError, 'findAll profiles');
+        if (!profiles) return [];
+
+        const usersWithProfiles = allAuthUsers
+            .map((user) => {
+                const profile = profiles.find((p) => p.id === user.id);
+                return {
+                    id: user.id,
+                    username: profile?.username || 'N/A',
+                    role: profile?.role || 'N/A',
+                    email: user.email,
+                };
+            })
+            .filter((p) => p.role !== 'N/A');
+
+        return usersWithProfiles;
     }
-    
+
     async update(id: number, updateDto: UpdateReadingDto, token: string, operatorId: string, userRole: string) {
         const supabase = this.supabaseService.getClient(token);
 
@@ -131,12 +141,12 @@ export class ReadingsService {
             .select('created_at, operator_id, customer_code, storage_number, fixed_storage_quantity, psi, temp, psi_out, flow_turbine, remarks, recorded_at') // Ambil lebih banyak field
             .eq('id', id)
             .single();
-        
+
         this.handleSupabaseError(findError, `find reading for update: ${id}`);
         if (!readingToUpdate) {
             throw new NotFoundException(`Reading with ID ${id} not found.`);
         }
-        
+
         if (userRole === 'operator') {
             if (readingToUpdate.operator_id !== operatorId) {
                 throw new ForbiddenException('You can only edit your own entries.');
@@ -162,7 +172,7 @@ export class ReadingsService {
         });
 
         this.handleSupabaseError(error, `update and backfill reading id: ${id}`);
-        
+
         // Ambil kembali data yang sudah terupdate untuk dikembalikan ke frontend
         const { data: updatedData } = await supabase
             .from('readings')
@@ -181,7 +191,7 @@ export class ReadingsService {
             .select('created_at, operator_id')
             .eq('id', id)
             .single();
-            
+
         this.handleSupabaseError(findError, `find reading for deletion: ${id}`);
         if (!readingToDelete) {
             throw new NotFoundException(`Reading with ID ${id} not found.`);
@@ -196,7 +206,7 @@ export class ReadingsService {
                 throw new ForbiddenException('Delete time limit of 2 hours has passed.');
             }
         }
-        
+
         const { error } = await supabase.from('readings').delete().eq('id', id);
         this.handleSupabaseError(error, `remove reading id: ${id}`);
     }
@@ -321,7 +331,7 @@ export class ReadingsService {
                 const pad = (num: number) => String(num).padStart(2, '0');
                 const durationStr = `${pad(Math.floor(diffMinutes / 60))}:${pad(diffMinutes % 60)}`;
                 if (lastReadingInBlock.operation_type === 'stop') {
-                     result.push({
+                    result.push({
                         id: `stop-${lastReadingInBlock.id}`, isStopRow: true,
                         totalFlow, duration: durationStr,
                         customer_code: lastReadingInBlock.customer_code,
